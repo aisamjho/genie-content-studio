@@ -212,11 +212,42 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   );
 }
 
+const planAmounts: Record<string, number> = {
+  Starter: 0,
+  Creator: 200,
+  Studio: 700,
+};
+
 function PricingButton({ plan }: { plan: (typeof plans)[number] }) {
   const navigate = useNavigate();
+
+  function handleClick() {
+    if (plan.name === "Starter") {
+      navigate({ to: "/auth" });
+      return;
+    }
+    const amount = planAmounts[plan.name];
+    const options = {
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+      amount,
+      currency: "INR",
+      name: "Geenie Content Studio",
+      description: `${plan.name} Plan — ${plan.price}/month`,
+      image: "/favicon.svg",
+      handler: function () {
+        navigate({ to: "/auth" });
+      },
+      prefill: { name: "", email: "" },
+      theme: { color: "#7c3aed" },
+    };
+    // @ts-ignore
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  }
+
   return (
     <button
-      onClick={() => navigate({ to: "/auth" })}
+      onClick={handleClick}
       className={`mt-7 w-full rounded-xl px-4 py-2.5 text-sm font-medium transition active:scale-95 ${
         plan.highlight
           ? "text-white hover:opacity-90"

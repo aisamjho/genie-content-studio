@@ -105,7 +105,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <head><HeadContent /></head>
+      <head><HeadContent /><script src="https://checkout.razorpay.com/v1/checkout.js"></script></head>
       <body>
         {children}
         <Scripts />
