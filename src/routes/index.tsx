@@ -113,7 +113,7 @@ const plans = [
   },
   {
     name: "Creator",
-    price: "$19",
+    price: "$2",
     period: "/ month",
     desc: "For solo creators shipping daily.",
     features: [
@@ -127,7 +127,7 @@ const plans = [
   },
   {
     name: "Studio",
-    price: "$49",
+    price: "$7",
     period: "/ month",
     desc: "For agencies and small teams.",
     features: [
@@ -325,7 +325,7 @@ function LandingPage() {
       </section>
 
       {/* Features */}
-      <section id="features" className="mx-auto max-w-6xl px-4">
+      <section id="features" className="mx-auto max-w-6xl px-4 scroll-mt-24">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-medium" style={{ color: "var(--magenta)" }}>
             Ten studios. One workspace.
@@ -392,7 +392,7 @@ function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="mx-auto mt-32 max-w-6xl px-4">
+      <section id="pricing" className="mx-auto mt-32 max-w-6xl px-4 scroll-mt-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-4xl font-semibold tracking-tight md:text-5xl">
             Pricing for every creator.
@@ -522,7 +522,7 @@ function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="mx-auto mt-32 max-w-3xl px-4">
+      <section id="faq" className="mx-auto mt-32 max-w-3xl px-4 scroll-mt-24">
         <div className="text-center">
           <h2 className="text-4xl font-semibold tracking-tight md:text-5xl">
             Questions, answered.
