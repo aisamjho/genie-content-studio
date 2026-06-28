@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://geenie.studio/</loc>
-    <lastmod>2026-06-27</lastmod>
+    <loc>https://genie-content-studio-ten.vercel.app/</loc>
+    <lastmod>2026-06-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://geenie.studio/about</loc>
-    <lastmod>2026-06-27</lastmod>
+    <loc>https://genie-content-studio-ten.vercel.app/about</loc>
+    <lastmod>2026-06-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://geenie.studio/contact</loc>
-    <lastmod>2026-06-27</lastmod>
+    <loc>https://genie-content-studio-ten.vercel.app/contact</loc>
+    <lastmod>2026-06-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://geenie.studio/privacy</loc>
-    <lastmod>2026-06-27</lastmod>
+    <loc>https://genie-content-studio-ten.vercel.app/privacy</loc>
+    <lastmod>2026-06-28</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://geenie.studio/terms</loc>
-    <lastmod>2026-06-27</lastmod>
+    <loc>https://genie-content-studio-ten.vercel.app/terms</loc>
+    <lastmod>2026-06-28</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
   </url>

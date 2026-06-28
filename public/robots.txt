@@ -4,4 +4,4 @@ Allow: /
 Disallow: /dashboard
 Disallow: /auth
 
-Sitemap: https://geenie.studio/sitemap.xml
+Sitemap: https://genie-content-studio-ten.vercel.app/sitemap.xml

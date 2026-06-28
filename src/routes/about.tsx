@@ -31,7 +31,7 @@ function AboutPage() {
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-4xl px-4 pt-20 pb-12">
+      <main className="mx-auto max-w-4xl px-4 pt-28 pb-12">
         <p className="text-sm font-medium" style={{ color: "var(--magenta)" }}>
           About
         </p>

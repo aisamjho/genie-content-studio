@@ -16,7 +16,7 @@ function PrivacyPage() {
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 pt-20 pb-16">
+      <main className="mx-auto max-w-3xl px-4 pt-28 pb-16">
         <p className="text-sm font-medium" style={{ color: "var(--magenta)" }}>Legal</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">Privacy Policy</h1>
         <p className="mt-3 text-sm text-muted-foreground">Last updated: 27 June 2026</p>
