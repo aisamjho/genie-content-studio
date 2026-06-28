@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useAuth } from "@/lib/auth";
 import {
@@ -13,18 +13,19 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 const studios = [
-  { icon: ImageIcon, name: "Image Studio",     desc: "Edit, retouch, restyle photos with AI." },
-  { icon: Film,      name: "Image Animation",  desc: "Animate stills into living cinematic scenes." },
-  { icon: Video,     name: "Video Studio",     desc: "Prompt-based video editing and colour grading." },
-  { icon: Wand2,     name: "Reel Generator",   desc: "Turn one photo into a scroll-stopping Reel." },
-  { icon: PenLine,   name: "Content Studio",   desc: "Captions, posts, blogs, newsletters, ad copy." },
-  { icon: Briefcase, name: "Business Toolkit", desc: "Ads, listings, proposals, sales scripts." },
-  { icon: Palette,   name: "Logo & Poster",    desc: "Logos, brand kits, posters, flyers, covers." },
-  { icon: Mic,       name: "Voice Studio",     desc: "Natural multilingual AI voiceovers." },
+  { icon: ImageIcon, name: "Image Studio",     desc: "Generate stunning AI images from text.", route: "/studios/image" },
+  { icon: Film,      name: "Image Animation",  desc: "Animate stills into living cinematic scenes.", route: "/studios/animation" },
+  { icon: Video,     name: "Video Studio",     desc: "Script, shot list & editing guide for any video.", route: "/studios/video" },
+  { icon: Wand2,     name: "Reel Generator",   desc: "Turn one idea into a viral reel package.", route: "/studios/reel" },
+  { icon: PenLine,   name: "Content Studio",   desc: "Captions, posts, blogs, newsletters, ad copy.", route: "/studios/content" },
+  { icon: Briefcase, name: "Business Toolkit", desc: "Ads, listings, proposals, sales scripts.", route: "/studios/business" },
+  { icon: Palette,   name: "Logo & Poster",    desc: "Logos, brand kits, posters, flyers, covers.", route: "/studios/logo" },
+  { icon: Mic,       name: "Voice Studio",     desc: "Natural multilingual AI voiceovers.", route: "/studios/voice" },
 ];
 
 function DashboardPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const creditsUsed = (user?.creditsTotal ?? 50) - (user?.credits ?? 50);
   const creditsRemaining = user?.credits ?? 50;
@@ -131,7 +132,7 @@ function DashboardPage() {
               <h3 className="mt-4 text-sm font-semibold">{s.name}</h3>
               <p className="mt-1 flex-1 text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
               <button
-                onClick={() => alert(`${s.name} is launching soon! You'll be notified when it's ready. 🚀`)}
+                onClick={() => navigate({ to: s.route })}
                 className="mt-4 inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-purple-400 hover:text-purple-300 transition-colors"
               >
                 Open studio <ArrowRight className="h-3 w-3" />

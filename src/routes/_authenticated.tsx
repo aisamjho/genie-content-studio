@@ -88,13 +88,14 @@ function AuthenticatedLayout() {
         </NavGroup>
 
         <NavGroup title="Studios">
-          <NavItem icon={ImageIcon} label="Image Studio" pathname={pathname} soon />
-          <NavItem icon={Film} label="Image Animation" pathname={pathname} soon />
-          <NavItem icon={Video} label="Video Studio" pathname={pathname} soon />
-          <NavItem icon={Wand2} label="Reel Generator" pathname={pathname} soon />
-          <NavItem icon={PenLine} label="Content Studio" pathname={pathname} soon />
-          <NavItem icon={Briefcase} label="Business Toolkit" pathname={pathname} soon />
-          <NavItem icon={Mic} label="Voice Studio" pathname={pathname} soon />
+          <NavItem to="/studios/image" icon={ImageIcon} label="Image Studio" pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/animation" icon={Film} label="Image Animation" pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/video" icon={Video} label="Video Studio" pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/reel" icon={Wand2} label="Reel Generator" pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/content" icon={PenLine} label="Content Studio" pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/business" icon={Briefcase} label="Business Toolkit" pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/logo" icon={Palette} label="Logo & Poster" pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/voice" icon={Mic} label="Voice Studio" pathname={pathname} onClick={() => setSidebarOpen(false)} />
         </NavGroup>
 
         <NavGroup title="Account">
