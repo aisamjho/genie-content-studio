@@ -131,9 +131,8 @@ function DashboardPage() {
               <h3 className="mt-4 text-sm font-semibold">{s.name}</h3>
               <p className="mt-1 flex-1 text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
               <button
-                disabled
-                aria-disabled="true"
-                className="mt-4 inline-flex cursor-not-allowed items-center gap-1 text-xs font-medium text-muted-foreground/40"
+                onClick={() => alert(`${s.name} is launching soon! You'll be notified when it's ready. 🚀`)}
+                className="mt-4 inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-purple-400 hover:text-purple-300 transition-colors"
               >
                 Open studio <ArrowRight className="h-3 w-3" />
               </button>

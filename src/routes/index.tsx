@@ -212,10 +212,18 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   );
 }
 
+// Razorpay requires amounts in paise (1 INR = 100 paise)
+// $2 USD ≈ ₹166 INR = 16600 paise
+// $7 USD ≈ ₹583 INR = 58300 paise
 const planAmounts: Record<string, number> = {
   Starter: 0,
-  Creator: 200,
-  Studio: 700,
+  Creator: 16600,
+  Studio: 58300,
+};
+
+const planLabels: Record<string, string> = {
+  Creator: "₹166 / month (~$2)",
+  Studio: "₹583 / month (~$7)",
 };
 
 function PricingButton({ plan }: { plan: (typeof plans)[number] }) {
@@ -232,7 +240,7 @@ function PricingButton({ plan }: { plan: (typeof plans)[number] }) {
       amount,
       currency: "INR",
       name: "Geenie Content Studio",
-      description: `${plan.name} Plan — ${plan.price}/month`,
+      description: `${plan.name} Plan — ${planLabels[plan.name]}`,
       image: "/favicon.svg",
       handler: function () {
         navigate({ to: "/auth" });
