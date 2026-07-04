@@ -48,6 +48,16 @@ function AnimeStudio() {
 
   function convert() {
     if (!imageSrc) return;
+
+    // Free plan: 5 anime conversions limit
+    const used = parseInt(localStorage.getItem("geenie_anime_count") || "0");
+    const plan = localStorage.getItem("geenie_plan") || "starter";
+    if (plan === "starter" && used >= 5) {
+      setError("You've used all 5 free anime conversions. Upgrade to Creator ($2/mo) for unlimited. Click Billing in the sidebar.");
+      return;
+    }
+    localStorage.setItem("geenie_anime_count", String(used + 1));
+
     setLoading(true);
     setResultUrl(null);
     setError(null);
@@ -174,7 +184,19 @@ function AnimeStudio() {
             </button>
           )}
         </div>
-        <p className="text-xs text-center text-muted-foreground">Free · No watermark · Powered by Pollinations AI</p>
+        {(() => {
+          const used = parseInt(localStorage.getItem("geenie_anime_count") || "0");
+          const plan = localStorage.getItem("geenie_plan") || "starter";
+          const remaining = 5 - used;
+          return plan === "starter" ? (
+            <p className="text-xs text-center text-muted-foreground">
+              {remaining > 0 ? `${remaining} free conversions remaining · ` : "⚠️ Limit reached · "}
+              <a href="/#pricing" className="text-orange-500 font-medium hover:underline">Upgrade for unlimited →</a>
+            </p>
+          ) : (
+            <p className="text-xs text-center text-muted-foreground">Unlimited · Creator Plan · Powered by Pollinations AI</p>
+          );
+        })()}
       </div>
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
       <input ref={musicInputRef} type="file" accept="audio/*" onChange={handleMusicUpload} className="hidden" />

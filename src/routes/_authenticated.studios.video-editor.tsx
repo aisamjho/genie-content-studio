@@ -205,7 +205,14 @@ function VideoEditor() {
                 style={{ background: "var(--gradient-brand)" }}>
                 {playing ? <><Pause className="h-4 w-4" /> Pause</> : <><Play className="h-4 w-4" /> Play</>}
               </button>
-              <button onClick={() => { const a = document.createElement("a"); a.href = videoSrc; a.download = "geenie-reel.mp4"; a.click(); }}
+              <button onClick={() => {
+                  const plan = localStorage.getItem("geenie_plan") || "starter";
+                  if (plan === "starter") {
+                    const ok = window.confirm("Free plan downloads are SD quality. Upgrade to Creator ($2/mo) for HD. Download anyway?");
+                    if (!ok) return;
+                  }
+                  const a = document.createElement("a"); a.href = videoSrc; a.download = "geenie-reel.mp4"; a.click();
+                }}
                 className="flex items-center gap-1.5 rounded-xl bg-surface border border-border px-3 py-2.5 text-sm font-medium hover:bg-surface-elevated transition">
                 <Download className="h-4 w-4" />
               </button>

@@ -69,6 +69,7 @@ function PhotoEditor() {
 
   function downloadImage() {
     if (!imageSrc) return;
+    const plan = localStorage.getItem("geenie_plan") || "starter";
     const img = new window.Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
@@ -87,6 +88,15 @@ function PhotoEditor() {
       ctx.filter = filterStyle;
       ctx.drawImage(img, -img.width / 2, -img.height / 2);
       ctx.restore();
+
+      // Add watermark for free users
+      if (plan === "starter") {
+        ctx.font = "bold 18px Inter, sans-serif";
+        ctx.fillStyle = "rgba(255,255,255,0.75)";
+        ctx.shadowColor = "rgba(0,0,0,0.5)";
+        ctx.shadowBlur = 4;
+        ctx.fillText("Made with Geenie AI", 16, canvas.height - 16);
+      }
 
       const link = document.createElement("a");
       link.download = "geenie-edited-photo.png";
