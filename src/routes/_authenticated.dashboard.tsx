@@ -13,14 +13,9 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 const studios = [
-  { icon: ImageIcon, name: "Image Studio",     desc: "Generate stunning AI images from text.", route: "/studios/image" },
-  { icon: Film,      name: "Image Animation",  desc: "Animate stills into living cinematic scenes.", route: "/studios/animation" },
-  { icon: Video,     name: "Video Studio",     desc: "Script, shot list & editing guide for any video.", route: "/studios/video" },
-  { icon: Wand2,     name: "Reel Generator",   desc: "Turn one idea into a viral reel package.", route: "/studios/reel" },
-  { icon: PenLine,   name: "Content Studio",   desc: "Captions, posts, blogs, newsletters, ad copy.", route: "/studios/content" },
-  { icon: Briefcase, name: "Business Toolkit", desc: "Ads, listings, proposals, sales scripts.", route: "/studios/business" },
-  { icon: Palette,   name: "Logo & Poster",    desc: "Logos, brand kits, posters, flyers, covers.", route: "/studios/logo" },
-  { icon: Mic,       name: "Voice Studio",     desc: "Natural multilingual AI voiceovers.", route: "/studios/voice" },
+  { icon: ImageIcon, name: "Photo Editor",  desc: "Crop, filters, brightness, contrast & more.", route: "/studios/photo" },
+  { icon: Video,     name: "Video Editor",  desc: "Edit Reels & Shorts — filters, text, speed, trim.", route: "/studios/video-editor" },
+  { icon: Sparkles,  name: "Anime Style",   desc: "Convert photos to Ghibli, Shonen & more anime art.", route: "/studios/anime" },
 ];
 
 function DashboardPage() {

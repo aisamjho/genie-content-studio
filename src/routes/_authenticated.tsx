@@ -88,14 +88,9 @@ function AuthenticatedLayout() {
         </NavGroup>
 
         <NavGroup title="Studios">
-          <NavItem to="/studios/image" icon={ImageIcon} label="Image Studio" pathname={pathname} onClick={() => setSidebarOpen(false)} />
-          <NavItem to="/studios/animation" icon={Film} label="Image Animation" pathname={pathname} onClick={() => setSidebarOpen(false)} />
-          <NavItem to="/studios/video" icon={Video} label="Video Studio" pathname={pathname} onClick={() => setSidebarOpen(false)} />
-          <NavItem to="/studios/reel" icon={Wand2} label="Reel Generator" pathname={pathname} onClick={() => setSidebarOpen(false)} />
-          <NavItem to="/studios/content" icon={PenLine} label="Content Studio" pathname={pathname} onClick={() => setSidebarOpen(false)} />
-          <NavItem to="/studios/business" icon={Briefcase} label="Business Toolkit" pathname={pathname} onClick={() => setSidebarOpen(false)} />
-          <NavItem to="/studios/logo" icon={Palette} label="Logo & Poster" pathname={pathname} onClick={() => setSidebarOpen(false)} />
-          <NavItem to="/studios/voice" icon={Mic} label="Voice Studio" pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/photo" icon={ImageIcon} label="Photo Editor" pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/video-editor" icon={Video} label="Video Editor" pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/anime" icon={Sparkles} label="Anime Style" pathname={pathname} onClick={() => setSidebarOpen(false)} />
         </NavGroup>
 
         <NavGroup title="Account">

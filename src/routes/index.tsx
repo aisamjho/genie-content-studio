@@ -46,22 +46,22 @@ export const Route = createFileRoute("/")(({
 const studios = [
   {
     icon: ImageIcon,
-    name: "AI Image Studio",
+    name: "Photo Editor",
     desc: "Background removal, retouch, upscale, cinematic and luxury edits.",
   },
   {
     icon: Film,
-    name: "AI Image Animation",
+    name: "Video Editor",
     desc: "Bring portraits and products to life with cinematic motion.",
   },
   {
     icon: Video,
-    name: "AI Video Studio",
+    name: "Anime Style",
     desc: "Prompt-based video editing, captions, color grading, auto resize.",
   },
   {
     icon: Wand2,
-    name: "AI Reel Generator",
+    name: "Anime Style",
     desc: "Turn a single photo into scroll-stopping Reels and Shorts.",
   },
   {
