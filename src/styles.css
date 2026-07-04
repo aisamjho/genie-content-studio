@@ -50,20 +50,20 @@
 :root {
   --radius: 0.875rem;
 
-  /* Geenie AI Studio — Dark + Violet/Magenta */
-  --background: oklch(0.13 0.04 295);
-  --foreground: oklch(0.97 0.01 300);
-  --surface: oklch(0.17 0.05 295);
-  --surface-elevated: oklch(0.21 0.06 295);
-  --card: oklch(0.17 0.05 295);
-  --card-foreground: oklch(0.97 0.01 300);
+  /* Geenie AI Studio — Dark + Electric Orange/Pink */
+  --background: oklch(0.11 0.02 240);
+  --foreground: oklch(0.97 0.005 240);
+  --surface: oklch(0.15 0.015 240);
+  --surface-elevated: oklch(0.19 0.02 240);
+  --card: oklch(0.15 0.015 240);
+  --card-foreground: oklch(0.97 0.005 240);
   --popover: oklch(0.17 0.05 295);
   --popover-foreground: oklch(0.97 0.01 300);
 
-  --primary: oklch(0.68 0.22 300);
+  --primary: oklch(0.72 0.22 50);
   --primary-foreground: oklch(0.99 0 0);
-  --violet: oklch(0.68 0.22 300);
-  --magenta: oklch(0.68 0.26 350);
+  --violet: oklch(0.72 0.22 50);
+  --magenta: oklch(0.68 0.26 10);
 
   --secondary: oklch(0.24 0.06 295);
   --secondary-foreground: oklch(0.97 0.01 300);
@@ -77,7 +77,7 @@
   --input: oklch(0.28 0.06 295);
   --ring: oklch(0.68 0.22 300);
 
-  --gradient-brand: linear-gradient(135deg, oklch(0.68 0.22 300), oklch(0.68 0.26 350));
+  --gradient-brand: linear-gradient(135deg, #ff6b35, #f7277e);
   --gradient-hero: radial-gradient(ellipse at top, oklch(0.32 0.18 305 / 0.55), transparent 60%),
                    radial-gradient(ellipse at bottom right, oklch(0.32 0.22 350 / 0.4), transparent 55%);
   --shadow-glow: 0 0 60px -10px oklch(0.68 0.22 300 / 0.55);
@@ -85,8 +85,8 @@
 }
 
 .dark {
-  --background: oklch(0.13 0.04 295);
-  --foreground: oklch(0.97 0.01 300);
+  --background: oklch(0.11 0.02 240);
+  --foreground: oklch(0.97 0.005 240);
 }
 
 @layer base {

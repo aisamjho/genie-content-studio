@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Upload, Download, RotateCcw, Sun, Contrast, Droplet, Palette, Sparkles, Crop, RefreshCw } from "lucide-react";
+import { Upload, Download, RotateCcw, Sun, Contrast, Droplet, Palette, Sparkles, RefreshCw, Music } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/studios/photo")({
   head: () => ({ meta: [{ title: "Photo Editor — Geenie AI Studio" }] }),
@@ -35,6 +35,9 @@ function PhotoEditor() {
   const [activeFilter, setActiveFilter] = useState(filters[0]);
   const [rotation, setRotation] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const musicInputRef = useRef<HTMLInputElement>(null);
+  const [musicFile, setMusicFile] = useState<string | null>(null);
+  const [musicName, setMusicName] = useState('');
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
 
@@ -44,6 +47,13 @@ function PhotoEditor() {
     const reader = new FileReader();
     reader.onload = (ev) => setImageSrc(ev.target?.result as string);
     reader.readAsDataURL(file);
+  }
+
+  function handleMusicUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setMusicFile(URL.createObjectURL(file));
+    setMusicName(file.name);
   }
 
   function resetAll() {
@@ -122,7 +132,16 @@ function PhotoEditor() {
               />
             </div>
             <div className="flex gap-2">
-              <button onClick={() => fileInputRef.current?.click()} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-surface border border-border px-4 py-2.5 text-sm font-medium hover:bg-surface-elevated transition">
+              {/* Music */}
+            <div className="rounded-xl bg-surface border border-border p-3 flex items-center gap-3 flex-wrap">
+              <Music className="h-4 w-4 text-purple-400 flex-shrink-0" />
+              <button onClick={() => musicInputRef.current?.click()} className="text-xs font-medium text-muted-foreground hover:text-foreground transition">
+                {musicName || "Add Music (MP3)"}
+              </button>
+              {musicFile && <audio src={musicFile} controls className="h-7 flex-1 min-w-0" />}
+              {musicFile && <button onClick={() => {setMusicFile(null); setMusicName('');}} className="text-xs text-red-400">✕</button>}
+            </div>
+            <button onClick={() => fileInputRef.current?.click()} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-surface border border-border px-4 py-2.5 text-sm font-medium hover:bg-surface-elevated transition">
                 <RefreshCw className="h-4 w-4" /> New Photo
               </button>
               <button onClick={() => setRotation((r) => (r + 90) % 360)} className="flex items-center justify-center gap-2 rounded-xl bg-surface border border-border px-4 py-2.5 text-sm font-medium hover:bg-surface-elevated transition">
@@ -174,6 +193,7 @@ function PhotoEditor() {
 
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
       <canvas ref={canvasRef} className="hidden" />
+      <input ref={musicInputRef} type="file" accept="audio/*" onChange={handleMusicUpload} className="hidden" />
     </div>
   );
 }
