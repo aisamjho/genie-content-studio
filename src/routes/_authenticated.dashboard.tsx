@@ -13,9 +13,9 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 const studios = [
-  { icon: ImageIcon, name: "Photo Editor",  desc: "Crop, filters, brightness, contrast & more.", route: "/studios/photo" },
-  { icon: Video,     name: "Video Editor",  desc: "Edit Reels & Shorts — filters, text, speed, trim.", route: "/studios/video-editor" },
-  { icon: Sparkles,  name: "Anime Style",   desc: "Convert photos to Ghibli, Shonen & more anime art.", route: "/studios/anime" },
+  { icon: ImageIcon, name: "Photo Editor", desc: "Brightness, contrast, filters, crop — edit any photo.", route: "/studios/photo" },
+  { icon: Video,     name: "Video Editor", desc: "Edit Reels & Shorts — filters, text, speed, trim.", route: "/studios/video-editor" },
+  { icon: Sparkles,  name: "Anime Style",  desc: "Turn your photo or video into anime characters.", route: "/studios/anime" },
 ];
 
 function DashboardPage() {
