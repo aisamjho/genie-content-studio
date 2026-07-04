@@ -83,8 +83,8 @@ function AuthenticatedLayout() {
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
         <NavGroup title="Workspace">
           <NavItem to="/dashboard" icon={LayoutDashboard} label="Overview" pathname={pathname} onClick={() => setSidebarOpen(false)} />
-          <NavItem icon={History} label="History" pathname={pathname} soon />
-          <NavItem icon={Palette} label="Brand Kit" pathname={pathname} soon />
+          <NavItem icon={History} label="History" pathname={pathname} />
+          
         </NavGroup>
 
         <NavGroup title="Studios">
@@ -94,9 +94,9 @@ function AuthenticatedLayout() {
         </NavGroup>
 
         <NavGroup title="Account">
-          <NavItem icon={CreditCard} label="Billing" pathname={pathname} soon />
-          <NavItem icon={Bell} label="Notifications" pathname={pathname} soon />
-          <NavItem icon={Settings} label="Settings" pathname={pathname} soon />
+          <NavItem icon={CreditCard} label="Billing" pathname={pathname} onClick={() => window.open("/#pricing", "_self")} />
+          
+          
         </NavGroup>
       </nav>
 

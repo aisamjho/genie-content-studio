@@ -47,52 +47,17 @@ const studios = [
   {
     icon: ImageIcon,
     name: "Photo Editor",
-    desc: "Background removal, retouch, upscale, cinematic and luxury edits.",
-  },
-  {
-    icon: Film,
-    name: "Video Editor",
-    desc: "Bring portraits and products to life with cinematic motion.",
+    desc: "Brightness, contrast, saturation, filters, rotate — edit any photo instantly.",
   },
   {
     icon: Video,
+    name: "Video Editor",
+    desc: "Filters, captions, speed control, trim & background music for Reels & Shorts.",
+  },
+  {
+    icon: Sparkles,
     name: "Anime Style",
-    desc: "Prompt-based video editing, captions, color grading, auto resize.",
-  },
-  {
-    icon: Wand2,
-    name: "Anime Style",
-    desc: "Turn a single photo into scroll-stopping Reels and Shorts.",
-  },
-  {
-    icon: PenLine,
-    name: "AI Content Studio",
-    desc: "Captions, posts, blogs, newsletters, ad copy and SEO.",
-  },
-  {
-    icon: Briefcase,
-    name: "AI Business Toolkit",
-    desc: "Ads, listings, proposals, sales scripts, customer replies.",
-  },
-  {
-    icon: LayoutTemplate,
-    name: "AI Thumbnail Studio",
-    desc: "YouTube thumbnails, banners, covers and pins.",
-  },
-  {
-    icon: Palette,
-    name: "AI Logo & Poster",
-    desc: "Logos, brand kits, posters, flyers and event creatives.",
-  },
-  {
-    icon: Mic,
-    name: "AI Voice Studio",
-    desc: "Natural voiceovers in English, Hindi, Spanish, French and more.",
-  },
-  {
-    icon: Music,
-    name: "AI Music Match",
-    desc: "Royalty-free music recommendations tuned to your mood.",
+    desc: "Convert any photo to Ghibli, Naruto, Demon Slayer, Chibi anime art — free.",
   },
 ];
 
@@ -143,24 +108,28 @@ const plans = [
 
 const faqs = [
   {
-    q: "Do I need to pick the right AI model?",
-    a: "No. Geenie intelligently routes every request to the best provider behind the scenes — you just describe what you want.",
+    q: "Is Geenie AI really free?",
+    a: "Yes. Photo Editor and Video Editor are 100% free with no watermark. Anime Style gives 5 free conversions. Upgrade to Creator ($2/mo) for unlimited anime conversions.",
   },
   {
-    q: "Can I use generations commercially?",
-    a: "Yes. All paid plans include a commercial license for content you generate.",
+    q: "Do I need to install anything?",
+    a: "No. Geenie works entirely in your browser. No download, no install. Works on phone and desktop.",
   },
   {
-    q: "Which payment methods are supported?",
-    a: "Stripe, PayPal, Razorpay, Google Pay and Apple Pay. Cancel or change plans anytime.",
+    q: "Can I use this for Instagram Reels and YouTube Shorts?",
+    a: "Yes. The Video Editor supports 9:16 (Reels/Shorts), 1:1 (feed), and 16:9 (YouTube) ratios. Add music, captions, filters and speed effects.",
   },
   {
-    q: "Is there an API?",
-    a: "API access is included in the Studio plan and rolling out to Creator in beta.",
+    q: "What is the Anime Style feature?",
+    a: "Upload any photo and convert it to anime art styles like Studio Ghibli, Naruto, Demon Slayer, Chibi and more. Perfect for profile pictures and Reel content.",
   },
   {
-    q: "Where is my data stored?",
-    a: "Encrypted at rest in secure regional storage. GDPR-ready architecture. You can delete projects anytime.",
+    q: "How does payment work?",
+    a: "We use Razorpay for secure payments. You can pay with UPI, credit/debit card, or net banking. Plans are monthly and you can cancel anytime.",
+  },
+  {
+    q: "Will my photos and videos be stored?",
+    a: "No. All editing happens in your browser. We never upload or store your files. Your content stays private on your device.",
   },
 ];
 
