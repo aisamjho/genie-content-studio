@@ -74,13 +74,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { name: "theme-color", content: "#180d2e" },
+      { name: "theme-color", content: "#ff5a1f" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+      { name: "apple-mobile-web-app-title", content: "Geenie AI" },
       { name: "robots", content: "index, follow" },
       { name: "author", content: "Abhishek Tiwari" },
       { title: "Geenie AI Studio — Create Amazing Content with AI in Seconds" },
       { name: "description", content: "One intelligent AI platform for images, videos, reels, captions and business content. Built by Abhishek Tiwari." },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://geenie.studio" },
+      { property: "og:url", content: "https://genie-content-studio-ten.vercel.app" },
       { property: "og:title", content: "Geenie AI Studio — Create Amazing Content with AI" },
       { property: "og:description", content: "One intelligent AI platform for images, videos, reels, captions and business content." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7d4a02b4-2b2e-4688-8184-9c7a62442509/id-preview-9b67bd2c--8430f7b8-3713-4c41-bfc0-64d0cf73a802.lovable.app-1782485569522.png" },
@@ -91,9 +95,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "canonical", href: "https://geenie.studio" },
+      { rel: "canonical", href: "https://genie-content-studio-ten.vercel.app" },
       { rel: "manifest", href: "/manifest.json" },
-      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
+      { rel: "apple-touch-icon", href: "/icon-192.png" },
     ],
   }),
   shellComponent: RootShell,
@@ -103,6 +108,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 }));
 
 function RootShell({ children }: { children: ReactNode }) {
+  if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    });
+  }
   return (
     <html lang="en">
       <head><HeadContent /><script src="https://checkout.razorpay.com/v1/checkout.js"></script></head>
