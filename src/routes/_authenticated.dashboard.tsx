@@ -40,7 +40,7 @@ function DashboardPage() {
             Hey {firstName} 👋
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Your studios are warming up. First releases ship soon.
+            Your studios are ready. Start creating below.
           </p>
         </motion.div>
 

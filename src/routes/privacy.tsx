@@ -19,7 +19,7 @@ function PrivacyPage() {
       <main className="mx-auto max-w-3xl px-4 pt-28 pb-16">
         <p className="text-sm font-medium" style={{ color: "var(--magenta)" }}>Legal</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">Privacy Policy</h1>
-        <p className="mt-3 text-sm text-muted-foreground">Last updated: 27 June 2026</p>
+        <p className="mt-3 text-sm text-muted-foreground">Last updated: 9 July 2026</p>
 
         <div className="mt-10 space-y-8 text-sm text-muted-foreground leading-relaxed">
           <Section title="1. Who we are">
@@ -82,7 +82,30 @@ function PrivacyPage() {
             We may update this policy and will notify users by email and by updating the date above.
           </Section>
 
-          <Section title="9. Contact">
+          <Section title="9. Children's Privacy">
+            Geenie AI Studio is not directed to children under 13. We do not knowingly collect
+            personal data from children under 13. If you believe a child has provided us with
+            personal data, please contact us immediately and we will delete it.
+          </Section>
+
+          <Section title="10. Data Deletion">
+            You can request deletion of your account and all associated data at any time by
+            emailing{" "}
+            <a href="mailto:abhishek2k1985@gmail.com" className="text-foreground underline">
+              abhishek2k1985@gmail.com
+            </a>{" "}
+            with the subject line "Delete My Data". We will process your request within 30 days.
+            You can also delete your account directly from the app settings.
+          </Section>
+
+          <Section title="11. India Data Protection">
+            We comply with the Digital Personal Data Protection Act, 2023 (India). As a Data
+            Fiduciary, we process your personal data only for the purposes stated in this policy.
+            You have the right to nominate a person to exercise your rights in the event of your
+            death or incapacity.
+          </Section>
+
+          <Section title="12. Contact">
             Questions about privacy?{" "}
             <a href="mailto:abhishek2k1985@gmail.com" className="text-foreground underline">
               abhishek2k1985@gmail.com

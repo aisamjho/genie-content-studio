@@ -19,7 +19,7 @@ function TermsPage() {
       <main className="mx-auto max-w-3xl px-4 pt-28 pb-16">
         <p className="text-sm font-medium" style={{ color: "var(--magenta)" }}>Legal</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">Terms of Service</h1>
-        <p className="mt-3 text-sm text-muted-foreground">Last updated: 27 June 2026</p>
+        <p className="mt-3 text-sm text-muted-foreground">Last updated: 9 July 2026</p>
 
         <div className="mt-10 space-y-8 text-sm text-muted-foreground leading-relaxed">
           <Section title="1. Acceptance">
@@ -79,7 +79,22 @@ function TermsPage() {
             These terms are governed by the laws of India. Disputes shall be resolved in the courts of New Delhi.
           </Section>
 
-          <Section title="10. Contact">
+          <Section title="10. Refund policy">
+            Subscription fees are non-refundable except where required by law. If you experience a
+            technical issue that prevents use of the service, contact us within 7 days for a
+            review. Credits consumed are non-refundable.
+          </Section>
+
+          <Section title="11. Termination">
+            We may suspend or terminate your account for violations of these terms. You may delete
+            your account at any time by emailing{" "}
+            <a href="mailto:abhishek2k1985@gmail.com" className="text-foreground underline">
+              abhishek2k1985@gmail.com
+            </a>.
+            Upon termination, your data will be deleted within 30 days.
+          </Section>
+
+          <Section title="12. Contact">
             Questions?{" "}
             <a href="mailto:abhishek2k1985@gmail.com" className="text-foreground underline">
               abhishek2k1985@gmail.com
