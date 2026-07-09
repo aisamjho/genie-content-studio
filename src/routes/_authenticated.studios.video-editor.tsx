@@ -206,7 +206,7 @@ function VideoEditor() {
                 {playing ? <><Pause className="h-4 w-4" /> Pause</> : <><Play className="h-4 w-4" /> Play</>}
               </button>
               <button onClick={() => {
-                  const plan = localStorage.getItem("geenie_plan") || "starter";
+                  const plan = typeof window !== "undefined" ? (localStorage.getItem("geenie_plan") || "starter") : "starter";
                   if (plan === "starter") {
                     const ok = window.confirm("Free plan downloads are SD quality. Upgrade to Creator ($2/mo) for HD. Download anyway?");
                     if (!ok) return;

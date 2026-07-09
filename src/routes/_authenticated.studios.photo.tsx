@@ -99,7 +99,7 @@ function PhotoEditor() {
   }
 
   function downloadImage() {
-    const plan = localStorage.getItem("geenie_plan") || "starter";
+    const plan = typeof window !== "undefined" ? (localStorage.getItem("geenie_plan") || "starter") : "starter";
     const src = activeTab === "AI Generate" ? aiResult : imageSrc;
     if (!src) return;
     const img = new window.Image();
@@ -178,7 +178,7 @@ function PhotoEditor() {
                   <button onClick={() => setRotation((r) => (r + 90) % 360)} className="flex items-center gap-1.5 rounded-xl bg-surface border border-border px-3 py-2 text-sm hover:bg-surface-elevated transition"><RotateCcw className="h-4 w-4" /> Rotate</button>
                   <button onClick={() => musicInputRef.current?.click()} className="flex items-center gap-1.5 rounded-xl bg-surface border border-border px-3 py-2 text-sm hover:bg-surface-elevated transition"><Music className="h-4 w-4" /> Music</button>
                   <button onClick={downloadImage} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-white transition" style={{ background: "var(--gradient-brand)" }}>
-                    <Download className="h-4 w-4" /> {(localStorage.getItem("geenie_plan") || "starter") === "starter" ? "Download (watermarked)" : "Download HD"}
+                    <Download className="h-4 w-4" /> {(typeof window !== "undefined" && localStorage.getItem("geenie_plan") === "creator" || typeof window !== "undefined" && localStorage.getItem("geenie_plan") === "studio") ? "Download HD" : "Download (watermarked)"}
                   </button>
                 </div>
               </div>

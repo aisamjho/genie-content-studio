@@ -31,11 +31,11 @@ export function getUser(): User | null {
 }
 
 function saveUser(user: User): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+  if (typeof window !== "undefined") localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
 }
 
 export function clearUser(): void {
-  localStorage.removeItem(STORAGE_KEY);
+  if (typeof window !== "undefined") localStorage.removeItem(STORAGE_KEY);
 }
 
 // ─── Auth operations ───────────────────────────────────────────────────────────
@@ -60,7 +60,7 @@ function getAccounts(): Record<string, StoredAccount> {
 }
 
 function saveAccounts(accounts: Record<string, StoredAccount>): void {
-  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+  if (typeof window !== "undefined") localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
 }
 
 function hashPassword(password: string): string {

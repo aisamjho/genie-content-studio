@@ -50,13 +50,13 @@ function AnimeStudio() {
     if (!imageSrc) return;
 
     // Free plan: 5 anime conversions limit
-    const used = parseInt(localStorage.getItem("geenie_anime_count") || "0");
-    const plan = localStorage.getItem("geenie_plan") || "starter";
+    const used = typeof window !== "undefined" ? parseInt(localStorage.getItem("geenie_anime_count") || "0") : 0;
+    const plan = typeof window !== "undefined" ? (localStorage.getItem("geenie_plan") || "starter") : "starter";
     if (plan === "starter" && used >= 5) {
       setError("You've used all 5 free anime conversions. Upgrade to Creator ($2/mo) for unlimited. Click Billing in the sidebar.");
       return;
     }
-    localStorage.setItem("geenie_anime_count", String(used + 1));
+    if (typeof window !== "undefined") localStorage.setItem("geenie_anime_count", String(used + 1));
 
     setLoading(true);
     setResultUrl(null);
@@ -185,8 +185,8 @@ function AnimeStudio() {
           )}
         </div>
         {(() => {
-          const used = parseInt(localStorage.getItem("geenie_anime_count") || "0");
-          const plan = localStorage.getItem("geenie_plan") || "starter";
+          const used = typeof window !== "undefined" ? parseInt(localStorage.getItem("geenie_anime_count") || "0") : 0;
+          const plan = typeof window !== "undefined" ? (localStorage.getItem("geenie_plan") || "starter") : "starter";
           const remaining = 5 - used;
           return plan === "starter" ? (
             <p className="text-xs text-center text-muted-foreground">
