@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useRef } from "react";
-import { Upload, Download, RotateCcw, Sun, Contrast, Droplet, Palette, Sparkles, RefreshCw, Music, Wand2, Image as ImageIcon } from "lucide-react";
+import { Upload, Download, RotateCcw, Sun, Contrast, Droplet, Palette, Sparkles, RefreshCw, Music, Wand2, Image as ImageIcon, Zap } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/studios/photo")({
   head: () => ({ meta: [{ title: "Photo Editor — Geenie AI Studio" }] }),
@@ -29,7 +29,7 @@ const backgrounds = [
   { name: "Office", value: "#f0f4f8" },
 ];
 
-const tabs = ["Edit", "AI Generate", "Background"] as const;
+const tabs = ["Edit", "Smart Edit", "AI Generate", "Background"] as const;
 type Tab = typeof tabs[number];
 
 async function callClaude(prompt: string): Promise<string> {
@@ -59,6 +59,9 @@ function PhotoEditor() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<string | null>(null);
+  const [smartPrompt, setSmartPrompt] = useState("");
+  const [smartLoading, setSmartLoading] = useState(false);
+  const [smartMessage, setSmartMessage] = useState("");
   const [musicFile, setMusicFile] = useState<string | null>(null);
   const [musicName, setMusicName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -96,6 +99,57 @@ function PhotoEditor() {
     const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhanced)}?width=1024&height=1024&seed=${seed}&nologo=true&enhance=true`;
     setAiResult(url);
     setAiLoading(false);
+  }
+
+
+  async function applySmartEdit() {
+    if (!smartPrompt.trim()) return;
+    setSmartLoading(true);
+    setSmartMessage("");
+
+    // Map natural language to CSS filter adjustments using Claude
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 300,
+        messages: [{
+          role: "user",
+          content: `You are a photo editing AI. Convert this editing instruction into CSS filter values.
+Instruction: "${smartPrompt}"
+
+Current values: brightness=${brightness}, contrast=${contrast}, saturation=${saturation}, blur=${blur}
+
+Respond ONLY with valid JSON like this (no explanation):
+{"brightness": 110, "contrast": 120, "saturation": 100, "blur": 0, "filter": "sepia(0.3)", "message": "Applied warm vintage look"}
+
+Rules:
+- brightness: 50-200 (100=normal)
+- contrast: 50-200 (100=normal)  
+- saturation: 0-200 (100=normal)
+- blur: 0-10
+- filter: any additional CSS filter string or empty string ""
+- message: friendly 1-sentence description of what was applied`
+        }]
+      })
+    });
+    const data = await res.json();
+    try {
+      const text = data.content?.[0]?.text ?? "{}";
+      const clean = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      if (parsed.brightness) setBrightness(parsed.brightness);
+      if (parsed.contrast) setContrast(parsed.contrast);
+      if (parsed.saturation !== undefined) setSaturation(parsed.saturation);
+      if (parsed.blur !== undefined) setBlur(parsed.blur);
+      if (parsed.filter !== undefined) setActiveFilter({ name: "Smart", css: parsed.filter });
+      setSmartMessage(parsed.message || "Edit applied!");
+      setSmartPrompt("");
+    } catch {
+      setSmartMessage("Could not understand that edit. Try: 'make it brighter' or 'add vintage look'");
+    }
+    setSmartLoading(false);
   }
 
   function downloadImage() {
@@ -201,6 +255,80 @@ function PhotoEditor() {
                 <SliderControl icon={Palette} label="Blur" value={blur} onChange={setBlur} min={0} max={10} suffix="px" />
                 <button onClick={resetAll} className="flex items-center justify-center gap-2 rounded-xl bg-surface border border-border px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-surface-elevated transition">
                   <RotateCcw className="h-3.5 w-3.5" /> Reset All
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── SMART EDIT TAB ── */}
+      {activeTab === "Smart Edit" && (
+        <>
+          {!imageSrc ? (
+            <button onClick={() => { setActiveTab("Edit"); setTimeout(() => fileInputRef.current?.click(), 100); }}
+              className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border bg-surface/50 py-20 hover:border-orange-500/50 transition">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full" style={{ background: "var(--gradient-brand)" }}>
+                <Upload className="h-6 w-6 text-white" />
+              </div>
+              <p className="text-sm font-medium">Upload a photo first</p>
+              <p className="text-xs text-muted-foreground">Go to Edit tab and upload</p>
+            </button>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
+              <div className="flex flex-col gap-3">
+                <div className="rounded-2xl overflow-hidden bg-black/10 flex items-center justify-center min-h-[300px]">
+                  <img src={imageSrc} alt="Smart editing" style={{ filter: filterStyle, transform: `rotate(${rotation}deg)`, maxHeight: "480px" }} className="max-w-full object-contain transition-all duration-300" />
+                </div>
+                <button onClick={downloadImage} className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition" style={{ background: "var(--gradient-brand)" }}>
+                  <Download className="h-4 w-4" /> Download
+                </button>
+              </div>
+              <div className="glass rounded-2xl p-4 flex flex-col gap-4">
+                <div>
+                  <p className="text-sm font-semibold mb-1">✨ Smart Edit</p>
+                  <p className="text-xs text-muted-foreground">Type what you want to do in plain English</p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <textarea value={smartPrompt} onChange={(e) => setSmartPrompt(e.target.value)}
+                    placeholder="e.g. make it brighter and more vivid..."
+                    className="w-full rounded-xl bg-surface border border-border px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-orange-500"
+                    rows={2}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); applySmartEdit(); } }}
+                  />
+                  <button onClick={applySmartEdit} disabled={smartLoading || !smartPrompt.trim() || !imageSrc}
+                    className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50 transition"
+                    style={{ background: "var(--gradient-brand)" }}>
+                    <Zap className="h-4 w-4" />{smartLoading ? "Applying..." : "Apply Edit"}
+                  </button>
+                  {smartMessage && (
+                    <div className="rounded-xl bg-green-50 border border-green-200 px-3 py-2">
+                      <p className="text-xs text-green-700">✅ {smartMessage}</p>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Try these:</p>
+                  <div className="flex flex-col gap-1.5">
+                    {[
+                      "Make it brighter and more vivid",
+                      "Add a cinematic dramatic look",
+                      "Make it look vintage and warm",
+                      "Black and white with high contrast",
+                      "Soft dreamy pastel look",
+                      "Make skin tones warmer",
+                      "Add a cool blue tone",
+                      "Make it look professional",
+                    ].map((s) => (
+                      <button key={s} onClick={() => setSmartPrompt(s)}
+                        className="text-left rounded-lg bg-surface border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-surface-elevated hover:text-foreground transition">
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button onClick={resetAll} className="flex items-center justify-center gap-2 rounded-xl bg-surface border border-border px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-surface-elevated transition">
+                  <RotateCcw className="h-3.5 w-3.5" /> Reset All Edits
                 </button>
               </div>
             </div>
