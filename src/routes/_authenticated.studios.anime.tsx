@@ -1,4 +1,3 @@
-"use client";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useRef } from "react";
 import { Upload, Download, Sparkles, Music, AlertCircle } from "lucide-react";
@@ -123,7 +122,7 @@ function AnimeStudio() {
         {/* Upload + Result */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-2 block">Reference Photo (for inspiration)</label>
+            <label className="text-xs font-medium text-muted-foreground mb-2 block">Your Photo</label>
             <button onClick={() => fileInputRef.current?.click()}
               className="w-full flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/20 bg-white/5 hover:border-purple-500/60 transition min-h-[200px] overflow-hidden">
               {imageSrc

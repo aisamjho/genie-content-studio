@@ -1,4 +1,3 @@
-"use client";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -222,7 +221,6 @@ function PricingButton({ plan }: { plan: (typeof plans)[number] }) {
       theme: { color: "#7c3aed" },
     };
     // @ts-ignore
-    if (typeof window === "undefined") return;
     const rzp = new window.Razorpay(options);
     rzp.open();
   }

@@ -48,7 +48,7 @@ function ErrorPage({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center">
       <h1 className="text-2xl font-semibold">Something went wrong</h1>
       <p className="mt-2 text-sm text-muted-foreground max-w-sm">
-        An unexpected error occurred. Refresh the page or go back home.
+        Something went wrong. Please try refreshing the page.
       </p>
       <div className="mt-6 flex gap-3">
         <button
@@ -75,10 +75,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "theme-color", content: "#ff5a1f" },
-      { name: "mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
-      { name: "apple-mobile-web-app-title", content: "Geenie AI" },
       { name: "robots", content: "index, follow" },
       { name: "author", content: "Abhishek Tiwari" },
       { title: "Geenie AI Studio — Create Amazing Content with AI in Seconds" },
@@ -97,8 +93,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: appCss },
       { rel: "canonical", href: "https://genie-content-studio-ten.vercel.app" },
       { rel: "manifest", href: "/manifest.json" },
-      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
-      { rel: "apple-touch-icon", href: "/icon-192.png" },
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
     ],
   }),
   shellComponent: RootShell,
@@ -108,11 +103,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 }));
 
 function RootShell({ children }: { children: ReactNode }) {
-  useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
-    }
-  }, []);
   return (
     <html lang="en">
       <head><HeadContent /><script src="https://checkout.razorpay.com/v1/checkout.js"></script></head>

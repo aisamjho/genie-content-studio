@@ -1,4 +1,3 @@
-"use client";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useAuth } from "@/lib/auth";
@@ -17,7 +16,7 @@ const studios = [
   { icon: ImageIcon, name: "Photo Editor", desc: "Brightness, contrast, filters, crop — edit any photo.", route: "/studios/photo" },
   { icon: Video,     name: "Video Editor", desc: "Edit Reels & Shorts — filters, text, speed, trim.", route: "/studios/video-editor" },
   { icon: Sparkles,  name: "Anime Style",  desc: "Turn your photo or video into anime characters.", route: "/studios/anime" },
-  { icon: Palette,   name: "Cartoon & Comic", desc: "Disney, Pixar, Comics, Manga, Lego, Sticker and more.", route: "/studios/cartoon" },
+  { icon: Palette,   name: "Cartoon & Comic", desc: "Disney, Pixar, Comics, Manga, Lego, Sticker styles.", route: "/studios/cartoon" },
 ];
 
 function DashboardPage() {
@@ -42,7 +41,7 @@ function DashboardPage() {
             Hey {firstName} 👋
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Your studios are ready. Start creating below.
+            Your studios are warming up. First releases ship soon.
           </p>
         </motion.div>
 
