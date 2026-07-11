@@ -289,47 +289,15 @@ Rules:
                   <p className="text-sm font-semibold mb-1">✨ Smart Edit</p>
                   <p className="text-xs text-muted-foreground">Type what you want to do in plain English</p>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <textarea value={smartPrompt} onChange={(e) => setSmartPrompt(e.target.value)}
-                    placeholder="e.g. make it brighter and more vivid..."
-                    className="w-full rounded-xl bg-surface border border-border px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-orange-500"
-                    rows={2}
-                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); applySmartEdit(); } }}
-                  />
-                  <button onClick={applySmartEdit} disabled={smartLoading || !smartPrompt.trim() || !imageSrc}
-                    className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50 transition"
-                    style={{ background: "var(--gradient-brand)" }}>
-                    <Zap className="h-4 w-4" />{smartLoading ? "Applying..." : "Apply Edit"}
-                  </button>
-                  {smartMessage && (
-                    <div className="rounded-xl bg-green-50 border border-green-200 px-3 py-2">
-                      <p className="text-xs text-green-700">✅ {smartMessage}</p>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Try these:</p>
-                  <div className="flex flex-col gap-1.5">
-                    {[
-                      "Make it brighter and more vivid",
-                      "Add a cinematic dramatic look",
-                      "Make it look vintage and warm",
-                      "Black and white with high contrast",
-                      "Soft dreamy pastel look",
-                      "Make skin tones warmer",
-                      "Add a cool blue tone",
-                      "Make it look professional",
-                    ].map((s) => (
-                      <button key={s} onClick={() => setSmartPrompt(s)}
-                        className="text-left rounded-lg bg-surface border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-surface-elevated hover:text-foreground transition">
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <button onClick={resetAll} className="flex items-center justify-center gap-2 rounded-xl bg-surface border border-border px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-surface-elevated transition">
-                  <RotateCcw className="h-3.5 w-3.5" /> Reset All Edits
-                </button>
+                <SmartEditPanel
+                  imageSrc={imageSrc}
+                  smartPrompt={smartPrompt}
+                  setSmartPrompt={setSmartPrompt}
+                  smartLoading={smartLoading}
+                  smartMessage={smartMessage}
+                  applySmartEdit={applySmartEdit}
+                  resetAll={resetAll}
+                />
               </div>
             </div>
           )}
@@ -427,6 +395,64 @@ Rules:
     </div>
   );
 }
+
+function SmartEditPanel({ imageSrc, smartPrompt, setSmartPrompt, smartLoading, smartMessage, applySmartEdit, resetAll }: {
+  imageSrc: string | null;
+  smartPrompt: string;
+  setSmartPrompt: (v: string) => void;
+  smartLoading: boolean;
+  smartMessage: string;
+  applySmartEdit: () => void;
+  resetAll: () => void;
+}) {
+  const isPaid = typeof window !== "undefined" &&
+    (localStorage.getItem("geenie_plan") === "creator" || localStorage.getItem("geenie_plan") === "studio");
+
+  if (!isPaid) {
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="rounded-xl bg-orange-50 border border-orange-300 p-4 text-center flex flex-col gap-2">
+          <p className="text-sm font-semibold text-orange-700">🔒 Creator & Studio Plan Only</p>
+          <p className="text-xs text-orange-600">Smart Edit uses Claude AI. Upgrade to unlock.</p>
+          <a href="/#pricing" className="inline-block rounded-xl px-4 py-2 text-sm font-medium text-white mt-1"
+            style={{ background: "linear-gradient(135deg,#ff5a1f,#f7277e)" }}>Upgrade — $2/mo →</a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <textarea value={smartPrompt} onChange={(e) => setSmartPrompt(e.target.value)}
+        placeholder="e.g. make it brighter and more vivid..."
+        className="w-full rounded-xl bg-surface border border-border px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-orange-500"
+        rows={2} />
+      <button onClick={applySmartEdit} disabled={smartLoading || !smartPrompt.trim() || !imageSrc}
+        className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50 transition"
+        style={{ background: "var(--gradient-brand)" }}>
+        {smartLoading ? "Applying..." : "Apply Edit"}
+      </button>
+      {smartMessage && (
+        <div className="rounded-xl bg-green-50 border border-green-200 px-3 py-2">
+          <p className="text-xs text-green-700">✅ {smartMessage}</p>
+        </div>
+      )}
+      <p className="text-xs font-medium text-muted-foreground mt-1">Try these:</p>
+      <div className="flex flex-col gap-1.5">
+        {["Make it brighter and vivid","Cinematic dramatic look","Vintage warm film","Black and white high contrast","Soft dreamy pastel","Make skin tones warmer","Cool blue tone","Professional clean look"].map((s) => (
+          <button key={s} onClick={() => setSmartPrompt(s)}
+            className="text-left rounded-lg bg-surface border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-surface-elevated transition">
+            {s}
+          </button>
+        ))}
+      </div>
+      <button onClick={resetAll} className="flex items-center justify-center gap-2 rounded-xl bg-surface border border-border px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-surface-elevated transition mt-1">
+        Reset All Edits
+      </button>
+    </div>
+  );
+}
+
 
 function SliderControl({ icon: Icon, label, value, onChange, min, max, suffix = "%" }: {
   icon: React.ComponentType<{ className?: string }>;

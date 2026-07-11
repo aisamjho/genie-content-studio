@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
-import { Upload, Download, Play, Pause, Sun, Contrast, RefreshCw, Music, X, Search } from "lucide-react";
+import { Upload, Download, Play, Pause, Sun, Contrast, RefreshCw, Music, X, Zap, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/studios/video-editor")({
   head: () => ({ meta: [{ title: "Video Editor — Geenie AI Studio" }] }),
@@ -50,12 +50,15 @@ function VideoEditor() {
   const [duration, setDuration] = useState(0);
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(100);
-  const [activeTab, setActiveTab] = useState<"filters"|"text"|"speed"|"trim"|"music">("filters");
+  const [activeTab, setActiveTab] = useState<"filters"|"text"|"speed"|"trim"|"music"|"smart">("filters");
   const [aspect, setAspect] = useState<"9:16"|"1:1"|"16:9">("9:16");
   const [musicSrc, setMusicSrc] = useState<string | null>(null);
   const [musicName, setMusicName] = useState("");
   const [musicVolume, setMusicVolume] = useState(70);
   const [showOnlineMusic, setShowOnlineMusic] = useState(false);
+  const [smartPrompt, setSmartPrompt] = useState("");
+  const [smartLoading, setSmartLoading] = useState(false);
+  const [smartMsg, setSmartMsg] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -82,6 +85,32 @@ function VideoEditor() {
     setMusicSrc(track.url);
     setMusicName(track.name);
     setShowOnlineMusic(false);
+  }
+
+  async function applyVideoSmartEdit() {
+    if (!smartPrompt.trim()) return;
+    setSmartLoading(true);
+    setSmartMsg("");
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 200,
+        messages: [{ role: "user", content: `Convert this video editing instruction to CSS filter values. Instruction: "${smartPrompt}". Current: brightness=${brightness}, contrast=${contrast}. Respond ONLY with JSON: {"brightness":110,"contrast":120,"filter":"sepia(0.3)","filterName":"Warm","message":"Applied warm tone"}` }]
+      })
+    });
+    const data = await res.json();
+    try {
+      const text = data.content?.[0]?.text ?? "{}";
+      const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+      if (parsed.brightness) setBrightness(parsed.brightness);
+      if (parsed.contrast) setContrast(parsed.contrast);
+      if (parsed.filter !== undefined) setActiveFilter({ name: parsed.filterName || "Smart", css: parsed.filter });
+      setSmartMsg(parsed.message || "Edit applied!");
+      setSmartPrompt("");
+    } catch { setSmartMsg("Try: 'make it cinematic' or 'add warm tones'"); }
+    setSmartLoading(false);
   }
 
   function togglePlay() {
@@ -127,6 +156,7 @@ function VideoEditor() {
     { key: "speed" as const, label: "⚡" },
     { key: "trim" as const, label: "✂️" },
     { key: "music" as const, label: "🎵" },
+    { key: "smart" as const, label: "🪄" },
   ];
 
   return (
@@ -350,6 +380,41 @@ function VideoEditor() {
                     )}
                   </div>
                   <p className="text-[11px] text-muted-foreground text-center">Music plays during preview only</p>
+                </div>
+              )}
+
+              {activeTab === "smart" && (
+                <div className="flex flex-col gap-3">
+                  <p className="text-xs font-semibold">🪄 Smart Edit</p>
+                  <p className="text-xs text-muted-foreground">Type what you want — AI applies it instantly</p>
+                  {(typeof window !== "undefined" && localStorage.getItem("geenie_plan") !== "creator" && localStorage.getItem("geenie_plan") !== "studio") ? (
+                    <div className="rounded-xl bg-orange-50 border border-orange-300 p-3 text-center">
+                      <Lock className="h-5 w-5 text-orange-500 mx-auto mb-1" />
+                      <p className="text-xs font-semibold text-orange-700">Creator Plan Only</p>
+                      <a href="/#pricing" className="text-xs text-orange-600 underline">Upgrade $2/mo →</a>
+                    </div>
+                  ) : (
+                    <>
+                      <textarea value={smartPrompt} onChange={(e) => setSmartPrompt(e.target.value)}
+                        placeholder="e.g. make it cinematic and dramatic..."
+                        className="w-full rounded-xl bg-surface border border-border px-3 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-orange-500"
+                        rows={2} />
+                      <button onClick={applyVideoSmartEdit} disabled={smartLoading || !smartPrompt.trim()}
+                        className="flex items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-xs font-medium text-white disabled:opacity-50 transition"
+                        style={{ background: "var(--gradient-brand)" }}>
+                        <Zap className="h-3.5 w-3.5" />{smartLoading ? "Applying..." : "Apply"}
+                      </button>
+                      {smartMsg && <p className="text-xs text-green-600 bg-green-50 rounded-lg px-3 py-2">✅ {smartMsg}</p>}
+                      <div className="flex flex-col gap-1">
+                        {["Cinematic dramatic look","Warm golden hour","Cool blue tone","Vintage film style","High contrast B&W","Dreamy soft glow"].map((s) => (
+                          <button key={s} onClick={() => setSmartPrompt(s)}
+                            className="text-left text-xs rounded-lg bg-surface border border-border px-2.5 py-1.5 text-muted-foreground hover:bg-surface-elevated transition">
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>

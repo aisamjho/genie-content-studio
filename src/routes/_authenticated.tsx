@@ -91,6 +91,7 @@ function AuthenticatedLayout() {
           <NavItem to="/studios/photo" icon={ImageIcon} label="Photo Editor" pathname={pathname} onClick={() => setSidebarOpen(false)} />
           <NavItem to="/studios/video-editor" icon={Video} label="Video Editor" pathname={pathname} onClick={() => setSidebarOpen(false)} />
           <NavItem to="/studios/anime" icon={Sparkles} label="Anime Style" pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/cartoon" icon={Palette} label="Cartoon & Comic" pathname={pathname} onClick={() => setSidebarOpen(false)} />
         </NavGroup>
 
         <NavGroup title="Account">

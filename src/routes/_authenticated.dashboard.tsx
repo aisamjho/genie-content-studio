@@ -16,6 +16,7 @@ const studios = [
   { icon: ImageIcon, name: "Photo Editor", desc: "Brightness, contrast, filters, crop — edit any photo.", route: "/studios/photo" },
   { icon: Video,     name: "Video Editor", desc: "Edit Reels & Shorts — filters, text, speed, trim.", route: "/studios/video-editor" },
   { icon: Sparkles,  name: "Anime Style",  desc: "Turn your photo or video into anime characters.", route: "/studios/anime" },
+  { icon: Palette,   name: "Cartoon & Comic", desc: "Disney, Pixar, Comics, Manga, Lego, Sticker and more.", route: "/studios/cartoon" },
 ];
 
 function DashboardPage() {
