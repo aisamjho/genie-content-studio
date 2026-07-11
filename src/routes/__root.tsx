@@ -108,11 +108,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 }));
 
 function RootShell({ children }: { children: ReactNode }) {
-  if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
-    });
-  }
+    }
+  }, []);
   return (
     <html lang="en">
       <head><HeadContent /><script src="https://checkout.razorpay.com/v1/checkout.js"></script></head>

@@ -405,8 +405,8 @@ function SmartEditPanel({ imageSrc, smartPrompt, setSmartPrompt, smartLoading, s
   applySmartEdit: () => void;
   resetAll: () => void;
 }) {
-  const isPaid = typeof window !== "undefined" &&
-    (localStorage.getItem("geenie_plan") === "creator" || localStorage.getItem("geenie_plan") === "studio");
+  const plan = typeof window !== "undefined" ? localStorage.getItem("geenie_plan") : null;
+  const isPaid = plan === "creator" || plan === "studio";
 
   if (!isPaid) {
     return (

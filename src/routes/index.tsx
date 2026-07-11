@@ -221,6 +221,7 @@ function PricingButton({ plan }: { plan: (typeof plans)[number] }) {
       theme: { color: "#7c3aed" },
     };
     // @ts-ignore
+    if (typeof window === "undefined") return;
     const rzp = new window.Razorpay(options);
     rzp.open();
   }
