@@ -1,3 +1,4 @@
+"use client";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Mail, Linkedin, Send, Loader2, CheckCircle } from "lucide-react";

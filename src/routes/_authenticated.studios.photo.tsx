@@ -1,3 +1,4 @@
+"use client";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useRef } from "react";
 import { Upload, Download, RotateCcw, Sun, Contrast, Droplet, Palette, Sparkles, RefreshCw, Music, Wand2, Image as ImageIcon, Zap } from "lucide-react";

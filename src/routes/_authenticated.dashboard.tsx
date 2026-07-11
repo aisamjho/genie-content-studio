@@ -1,3 +1,4 @@
+"use client";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useAuth } from "@/lib/auth";

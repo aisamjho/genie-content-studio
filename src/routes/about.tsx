@@ -1,3 +1,4 @@
+"use client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Linkedin, Mail, ArrowRight, Sparkles } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
