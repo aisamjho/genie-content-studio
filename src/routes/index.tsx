@@ -450,7 +450,7 @@ function LandingPage() {
           ))}
         </div>
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Payments via Stripe, PayPal, Razorpay, Google Pay &amp; Apple Pay. Cancel anytime.
+          Payments via Razorpay · UPI · Credit/Debit Card · Net Banking. Cancel anytime.
         </p>
       </section>
 
