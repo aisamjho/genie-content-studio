@@ -60,7 +60,7 @@ function PrivacyPage() {
             We use the following third parties:
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li>Supabase — authentication and database.</li>
-              <li>Stripe / PayPal / Razorpay — payment processing.</li>
+              <li>Razorpay — payment processing.</li>
               <li>AI providers (OpenAI, Fal.ai, Replicate, etc.) — content generation.</li>
             </ul>
             Each provider operates under their own privacy policy.
