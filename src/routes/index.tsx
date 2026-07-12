@@ -59,6 +59,11 @@ const studios = [
     name: "Anime Style",
     desc: "Convert any photo to Ghibli, Naruto, Demon Slayer, Chibi anime art — free.",
   },
+  {
+    icon: Palette,
+    name: "Cartoon & Comic",
+    desc: "Disney Pixar, Manga, Lego, Simpsons, Pop Art, Sticker styles and more.",
+  },
 ];
 
 const plans = [
