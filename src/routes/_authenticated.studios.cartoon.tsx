@@ -44,13 +44,23 @@ function CartoonStudio() {
     setTimeout(() => setLoading(false), 25000);
   }
 
-  function download() {
+  async function download() {
     if (!result) return;
-    const a = document.createElement("a");
-    a.href = result;
-    a.download = `geenie-${style.name.toLowerCase().replace(/ /g, "-")}.jpg`;
-    a.target = "_blank";
-    a.click();
+    try {
+      const response = await fetch(result);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `geenie-${style.name.toLowerCase().replace(/ /g, "-")}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      // Fallback - open in new tab
+      window.open(result, "_blank");
+    }
   }
 
   const grad = { background: "var(--gradient-brand)" };

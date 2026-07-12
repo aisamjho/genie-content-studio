@@ -51,6 +51,9 @@ function PhotoEditor() {
   const [smartPrompt, setSmartPrompt] = useState("");
   const [smartLoading, setSmartLoading] = useState(false);
   const [smartMsg, setSmartMsg] = useState("");
+  const [aiBgPrompt, setAiBgPrompt] = useState("");
+  const [aiBgLoading, setAiBgLoading] = useState(false);
+  const [aiBgUrl, setAiBgUrl] = useState<string | null>(null);
   const [musicFile, setMusicFile] = useState<string | null>(null);
   const [musicName, setMusicName] = useState("");
   const [plan, setPlan] = useState("starter");
@@ -122,6 +125,21 @@ function PhotoEditor() {
       setSmartPrompt("");
     } catch { setSmartMsg("Try: 'make it brighter' or 'add vintage look'"); }
     setSmartLoading(false);
+  }
+
+  function generateAIBg() {
+    if (!aiBgPrompt.trim()) return;
+    setAiBgLoading(true);
+    setAiBgUrl(null);
+    const seed = Math.floor(Math.random() * 99999);
+    const prompt = encodeURIComponent(`${aiBgPrompt}, background scenery, high quality, wide angle, no people, photorealistic`);
+    const url = `https://image.pollinations.ai/prompt/${prompt}?width=1024&height=1024&seed=${seed}&nologo=true&enhance=true`;
+    setAiBgUrl(url);
+    const img = new window.Image();
+    img.onload = () => setAiBgLoading(false);
+    img.onerror = () => setAiBgLoading(false);
+    img.src = url;
+    setTimeout(() => setAiBgLoading(false), 25000);
   }
 
   function download() {
@@ -298,18 +316,52 @@ function PhotoEditor() {
 
       {tab === "Background" && imageSrc && (
         <div className="glass rounded-2xl p-5 flex flex-col gap-4">
-          <div className="rounded-2xl overflow-hidden flex items-center justify-center min-h-[240px]" style={{ background: bg.value || "#f5f5f7" }}>
-            <img src={imageSrc} alt="bg preview" style={{ filter: filterStyle, maxHeight: "240px" }} className="max-w-full object-contain mix-blend-multiply" />
-          </div>
-          <div className="grid grid-cols-4 gap-2">
-            {bgs.map(b => (
-              <button key={b.name} onClick={() => setBg(b)}
-                className={`rounded-xl h-12 text-xs font-medium border-2 transition ${bg.name === b.name ? "border-orange-500" : "border-transparent"}`}
-                style={{ background: b.value || "#f0f0f0" }}>
-                <span style={{ color: b.value === "#000000" ? "#fff" : "#111" }}>{b.name}</span>
+          {/* AI Prompt Background */}
+          <div className="rounded-xl bg-orange-50 border border-orange-200 p-3 flex flex-col gap-2">
+            <p className="text-xs font-semibold text-orange-700">✨ AI Background — describe what you want</p>
+            <div className="flex gap-2">
+              <input value={aiBgPrompt} onChange={e => setAiBgPrompt(e.target.value)}
+                placeholder="e.g. sunset beach, city skyline, forest, studio white..."
+                className="flex-1 rounded-xl bg-white border border-orange-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              <button onClick={generateAIBg} disabled={aiBgLoading || !aiBgPrompt.trim()}
+                className="rounded-xl px-4 py-2 text-sm font-medium text-white disabled:opacity-50 shrink-0" style={grad}>
+                {aiBgLoading ? "..." : "Generate"}
               </button>
-            ))}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {["Sunset beach","City skyline at night","Forest green","White studio","Galaxy stars","Neon city","Mountain peak","Marble texture"].map(p => (
+                <button key={p} onClick={() => setAiBgPrompt(p)}
+                  className="rounded-full bg-white border border-orange-200 px-2.5 py-1 text-[11px] text-orange-600 hover:bg-orange-100 transition">{p}</button>
+              ))}
+            </div>
           </div>
+
+          {/* Preview */}
+          <div className="rounded-2xl overflow-hidden flex items-center justify-center min-h-[240px] relative"
+            style={{ background: aiBgUrl ? undefined : (bg.value || "#f5f5f7") }}>
+            {aiBgUrl && <img src={aiBgUrl} className="absolute inset-0 w-full h-full object-cover" alt="ai bg" />}
+            {aiBgLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/70">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
+              </div>
+            )}
+            <img src={imageSrc} alt="bg preview" style={{ filter: filterStyle, maxHeight: "240px", position: "relative", zIndex: 1 }} className="max-w-full object-contain mix-blend-multiply" />
+          </div>
+
+          {/* Solid backgrounds */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-2">Or choose a solid background</p>
+            <div className="grid grid-cols-4 gap-2">
+              {bgs.map(b => (
+                <button key={b.name} onClick={() => { setBg(b); setAiBgUrl(null); }}
+                  className={`rounded-xl h-12 text-xs font-medium border-2 transition ${bg.name === b.name && !aiBgUrl ? "border-orange-500" : "border-transparent"}`}
+                  style={{ background: b.value || "#f0f0f0" }}>
+                  <span style={{ color: b.value === "#000000" ? "#fff" : "#111" }}>{b.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button onClick={download} className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white" style={grad}>
             <Download className="h-4 w-4" />Download with Background
           </button>

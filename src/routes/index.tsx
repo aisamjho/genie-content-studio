@@ -231,9 +231,9 @@ function PricingButton({ plan }: { plan: (typeof plans)[number] }) {
       className={`mt-7 w-full rounded-xl px-4 py-2.5 text-sm font-medium transition active:scale-95 ${
         plan.highlight
           ? "text-white hover:opacity-90"
-          : "border border-border bg-surface hover:bg-surface-elevated"
+          : "border-2 border-orange-400 hover:bg-orange-50 text-orange-600 font-medium"
       }`}
-      style={plan.highlight ? { background: "var(--gradient-brand)" } : undefined}
+      style={{ background: plan.highlight ? "var(--gradient-brand)" : plan.name === "Studio" ? "linear-gradient(135deg,#1a1a2e,#2d2d50)" : undefined, color: !plan.highlight && plan.name !== "Studio" ? undefined : "white" }}
     >
       {plan.cta}
     </button>
