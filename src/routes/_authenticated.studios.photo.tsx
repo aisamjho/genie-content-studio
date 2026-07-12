@@ -339,14 +339,19 @@ function PhotoEditor() {
           {/* Preview */}
           <div className="rounded-2xl overflow-hidden flex items-center justify-center min-h-[240px] relative"
             style={{ background: aiBgUrl ? undefined : (bg.value || "#f5f5f7") }}>
-            {aiBgUrl && <img src={aiBgUrl} className="absolute inset-0 w-full h-full object-cover" alt="ai bg" />}
+            {aiBgUrl && <img src={aiBgUrl} className="absolute inset-0 w-full h-full object-cover rounded-2xl" alt="ai bg" />}
             {aiBgLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/70">
+              <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-2xl z-10">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
               </div>
             )}
-            <img src={imageSrc} alt="bg preview" style={{ filter: filterStyle, maxHeight: "240px", position: "relative", zIndex: 1 }} className="max-w-full object-contain mix-blend-multiply" />
+            <img src={imageSrc} alt="bg preview" style={{ filter: filterStyle, maxHeight: "240px", position: "relative", zIndex: 2 }} className="max-w-full object-contain" />
           </div>
+          {(aiBgUrl || bg.value) && (
+            <div className="rounded-xl bg-blue-50 border border-blue-200 p-3">
+              <p className="text-xs text-blue-700">💡 <strong>How it works:</strong> The background appears behind your photo. For full background removal (replacing sky, walls etc), upgrade to Creator plan — coming soon with Replicate AI.</p>
+            </div>
+          )}
 
           {/* Solid backgrounds */}
           <div>
