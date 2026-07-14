@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef } from "react";
 import { Upload, Download, Sparkles, Music, AlertCircle } from "lucide-react";
 
@@ -19,6 +19,7 @@ const animeStyles = [
 ];
 
 function AnimeStudio() {
+  const navigate = useNavigate();
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [style, setStyle] = useState(animeStyles[0]);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
@@ -95,6 +96,10 @@ function AnimeStudio() {
   return (
     <div className="flex flex-col gap-6 p-6 max-w-4xl mx-auto w-full">
       <div className="flex items-center gap-3">
+        <button onClick={() => navigate({ to: "/dashboard" })}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition mr-1">
+          ← Back
+        </button>
         <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "linear-gradient(135deg, #a855f7, #ec4899)" }}>
           <Sparkles className="h-5 w-5 text-white" />
         </div>

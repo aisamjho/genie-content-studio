@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { Upload, Download, Play, Pause, Sun, Contrast, RefreshCw, Music, X, Search } from "lucide-react";
 
@@ -38,6 +38,7 @@ const onlineTracks = [
 ];
 
 function VideoEditor() {
+  const navigate = useNavigate();
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState(videoFilters[0]);
   const [brightness, setBrightness] = useState(100);
@@ -133,6 +134,10 @@ function VideoEditor() {
     <div className="flex flex-col gap-4 p-4 sm:p-6 max-w-4xl mx-auto w-full">
       {/* Header */}
       <div className="flex items-center gap-3">
+        <button onClick={() => navigate({ to: "/dashboard" })}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition mr-1">
+          ← Back
+        </button>
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ background: "var(--gradient-brand)" }}>
           <Play className="h-5 w-5 text-white" />
         </div>

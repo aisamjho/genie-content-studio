@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef } from "react";
 import { Upload, Download, Sparkles, RefreshCw } from "lucide-react";
 
@@ -23,17 +23,27 @@ const STYLES = [
 ];
 
 function CartoonStudio() {
+  const navigate = useNavigate();
   const [style, setStyle] = useState(STYLES[0]);
   const [desc, setDesc] = useState("");
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setImageSrc(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
   function generate() {
     setLoading(true); setResult(null); setError(null);
     const seed = Math.floor(Math.random() * 999999);
-    const subject = desc.trim() ? `, ${desc}` : ", portrait character";
+    const subject = desc.trim() ? `, ${desc}` : imageSrc ? ", character inspired by uploaded photo" : ", portrait character";
     const prompt = encodeURIComponent(`${style.prompt}${subject}, high quality illustration`);
     const url = `https://image.pollinations.ai/prompt/${prompt}?width=1024&height=1024&seed=${seed}&nologo=true&enhance=true`;
     setResult(url);
@@ -68,6 +78,10 @@ function CartoonStudio() {
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 max-w-4xl mx-auto w-full">
       <div className="flex items-center gap-3">
+        <button onClick={() => navigate({ to: "/dashboard" })}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition mr-1">
+          ← Back
+        </button>
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl" style={grad}>🎨</div>
         <div>
           <h1 className="text-xl font-semibold">Cartoon & Comic Style</h1>
@@ -89,11 +103,23 @@ function CartoonStudio() {
           </div>
         </div>
 
-        <div>
-          <label className="text-xs font-medium text-muted-foreground mb-2 block">Describe your subject <span className="opacity-60">(optional)</span></label>
-          <input value={desc} onChange={e => setDesc(e.target.value)}
-            placeholder="e.g. a man with glasses, or a cat sitting on a chair..."
-            className="w-full rounded-xl bg-surface border border-border px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-2 block">Upload Reference Photo <span className="opacity-60">(optional)</span></label>
+            <button onClick={() => fileRef.current?.click()}
+              className="w-full flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-surface/50 hover:border-orange-500/60 transition min-h-[100px] overflow-hidden">
+              {imageSrc
+                ? <img src={imageSrc} className="w-full max-h-[100px] object-cover rounded-xl" alt="reference" />
+                : <><Upload className="h-5 w-5 text-muted-foreground" /><span className="text-xs text-muted-foreground">Upload photo (optional)</span></>}
+            </button>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-2 block">Describe your subject <span className="opacity-60">(optional)</span></label>
+            <textarea value={desc} onChange={e => setDesc(e.target.value)}
+              placeholder="e.g. a man with glasses and beard, or a cat sitting..."
+              className="w-full rounded-xl bg-surface border border-border px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-orange-500"
+              rows={3} />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -134,7 +160,7 @@ function CartoonStudio() {
         </div>
         <p className="text-xs text-center text-muted-foreground">Free · No watermark · Powered by Pollinations AI</p>
       </div>
-      <input ref={fileRef} type="file" accept="image/*" className="hidden" />
+      <input ref={fileRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
     </div>
   );
 }

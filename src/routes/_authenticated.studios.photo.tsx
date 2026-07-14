@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { Upload, Download, RotateCcw, Sun, Contrast, Droplet, Palette, Sparkles, RefreshCw, Music, Zap, Image as ImageIcon } from "lucide-react";
 
@@ -36,6 +36,7 @@ const PROMPTS = ["Make it brighter and vivid","Cinematic dramatic look","Vintage
 const AI_PRESETS = ["Product photo on white background","LinkedIn headshot professional","YouTube thumbnail dramatic","Instagram aesthetic café"];
 
 function PhotoEditor() {
+  const navigate = useNavigate();
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [brightness, setBrightness] = useState(100);
   const [contrast, setContrast] = useState(100);
@@ -178,6 +179,10 @@ function PhotoEditor() {
   return (
     <div className="flex flex-col gap-4 p-4 sm:p-6 max-w-4xl mx-auto w-full">
       <div className="flex items-center gap-3">
+        <button onClick={() => navigate({ to: "/dashboard" })}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition mr-1">
+          ← Back
+        </button>
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={grad}>
           <ImageIcon className="h-5 w-5 text-white" />
         </div>
