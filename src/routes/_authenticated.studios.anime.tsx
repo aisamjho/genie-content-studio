@@ -20,16 +20,12 @@ const animeStyles = [
 
 function AnimeStudio() {
   const navigate = useNavigate();
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [style, setStyle] = useState(animeStyles[0]);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [musicFile, setMusicFile] = useState<string | null>(null);
+  const [customDesc, setCustomDesc] = useState("");
   const [musicName, setMusicName] = useState<string>("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const musicInputRef = useRef<HTMLInputElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
 
   function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -65,7 +61,8 @@ function AnimeStudio() {
 
     // Use Pollinations with style prompt - generates anime version
     const seed = Math.floor(Math.random() * 999999);
-    const fullPrompt = `${style.prompt}, portrait, face visible, high quality anime art, 4k detailed`;
+    const subject = customDesc.trim() ? `, ${customDesc}` : ', anime character portrait';
+    const fullPrompt = `${style.prompt}${subject}, high quality anime art, 4k detailed`;
     const encoded = encodeURIComponent(fullPrompt);
     const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&seed=${seed}&nologo=true&enhance=true`;
 
@@ -155,30 +152,11 @@ function AnimeStudio() {
           </div>
         )}
 
-        {/* Music section */}
-        <div className="rounded-xl bg-white/5 border border-white/10 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Music className="h-4 w-4 text-purple-400" />
-            <span className="text-sm font-medium">Add Background Music</span>
-          </div>
-          <div className="flex gap-3 items-center flex-wrap">
-            <button onClick={() => musicInputRef.current?.click()}
-              className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/15 px-4 py-2 text-xs font-medium hover:bg-white/10 transition">
-              <Upload className="h-3.5 w-3.5" /> {musicName || "Upload MP3"}
-            </button>
-            {musicFile && (
-              <>
-                <audio ref={audioRef} src={musicFile} controls className="h-8 flex-1 min-w-0" />
-                <button onClick={() => { setMusicFile(null); setMusicName(""); }} className="text-xs text-red-400 hover:text-red-300">Remove</button>
-              </>
-            )}
-          </div>
-          {!musicFile && <p className="text-[11px] text-muted-foreground mt-2">Upload an MP3 to preview your image with music — great for Reels content</p>}
-        </div>
+
 
         {/* Actions */}
         <div className="flex gap-3">
-          <button onClick={convert} disabled={loading || !imageSrc}
+          <button onClick={convert} disabled={loading}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white disabled:opacity-40 transition"
             style={{ background: "linear-gradient(135deg, #a855f7, #ec4899)" }}>
             <Sparkles className="h-4 w-4" />{loading ? "Converting..." : "Convert to Anime"}
@@ -203,8 +181,6 @@ function AnimeStudio() {
           );
         })()}
       </div>
-      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
-      <input ref={musicInputRef} type="file" accept="audio/*" onChange={handleMusicUpload} className="hidden" />
     </div>
   );
 }
