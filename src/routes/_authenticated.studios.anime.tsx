@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useRef } from "react";
-import { Upload, Download, Sparkles, Music, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Download, Sparkles, RefreshCw, AlertCircle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/studios/anime")({
   head: () => ({ meta: [{ title: "Anime Style — Geenie AI Studio" }] }),
@@ -8,178 +8,169 @@ export const Route = createFileRoute("/_authenticated/studios/anime")({
 });
 
 const animeStyles = [
-  { name: "Studio Ghibli", prompt: "studio ghibli anime art style, miyazaki, soft watercolor painting, magical background, beautiful anime illustration" },
-  { name: "Naruto", prompt: "naruto anime style character, bold black outlines, orange and blue colors, ninja headband, shounen manga style" },
-  { name: "Demon Slayer", prompt: "demon slayer kimetsu no yaiba anime style, vibrant colors, detailed hair, dramatic lighting, beautiful anime character" },
-  { name: "One Piece", prompt: "one piece anime style, eiichiro oda art style, bold outlines, colorful, adventure anime character" },
-  { name: "Attack on Titan", prompt: "attack on titan anime style, dark dramatic lighting, detailed military uniform, intense expression, survey corps" },
+  { name: "Studio Ghibli", prompt: "Studio Ghibli anime art style, Hayao Miyazaki, soft watercolor painting, magical background, beautiful anime illustration" },
+  { name: "Naruto", prompt: "Naruto anime style character, bold black outlines, orange and blue colors, ninja headband, shounen manga style" },
+  { name: "Demon Slayer", prompt: "Demon Slayer kimetsu no yaiba anime style, vibrant colors, detailed hair, dramatic lighting, beautiful anime character" },
+  { name: "One Piece", prompt: "One Piece anime style, Eiichiro Oda art style, bold outlines, colorful, adventure anime character" },
+  { name: "Attack on Titan", prompt: "Attack on Titan anime style, dark dramatic lighting, detailed military uniform, intense expression, survey corps" },
   { name: "Chibi", prompt: "super cute chibi anime character, big sparkling eyes, tiny body, kawaii style, pastel colors, adorable" },
   { name: "Cyberpunk", prompt: "cyberpunk anime character, neon lights, futuristic city background, glowing eyes, dystopian anime style" },
-  { name: "Watercolor", prompt: "soft watercolor anime illustration, pastel dreamy colors, gentle brushwork, aesthetic anime girl style" },
+  { name: "Watercolor", prompt: "soft watercolor anime illustration, pastel dreamy colors, gentle brushwork, aesthetic anime style" },
 ];
 
 function AnimeStudio() {
   const navigate = useNavigate();
   const [style, setStyle] = useState(animeStyles[0]);
+  const [subject, setSubject] = useState("");
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [customDesc, setCustomDesc] = useState("");
-  const [musicName, setMusicName] = useState<string>("");
+  const [plan, setPlan] = useState("starter");
+  const [usedCount, setUsedCount] = useState(0);
 
-  function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) { setError("Please upload an image file."); return; }
-    const reader = new FileReader();
-    reader.onload = (ev) => { setImageSrc(ev.target?.result as string); setResultUrl(null); setError(null); };
-    reader.readAsDataURL(file);
-  }
+  useEffect(() => {
+    setPlan(localStorage.getItem("geenie_plan") || "starter");
+    setUsedCount(parseInt(localStorage.getItem("geenie_anime_count") || "0"));
+  }, []);
 
-  function handleMusicUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setMusicFile(URL.createObjectURL(file));
-    setMusicName(file.name);
-  }
+  const isPaid = plan === "creator" || plan === "studio";
+  const remaining = 5 - usedCount;
 
   function convert() {
-    if (!imageSrc) return;
-
-    // Free plan: 5 anime conversions limit
-    const used = typeof window !== "undefined" ? parseInt(localStorage.getItem("geenie_anime_count") || "0") : 0;
-    const plan = typeof window !== "undefined" ? (localStorage.getItem("geenie_plan") || "starter") : "starter";
-    if (plan === "starter" && used >= 5) {
-      setError("You've used all 5 free anime conversions. Upgrade to Creator ($2/mo) for unlimited. Click Billing in the sidebar.");
+    if (!isPaid && usedCount >= 5) {
+      setError("You've used all 5 free anime generations. Upgrade to Creator ($2/mo) for unlimited.");
       return;
     }
-    if (typeof window !== "undefined") localStorage.setItem("geenie_anime_count", String(used + 1));
-
     setLoading(true);
     setResultUrl(null);
     setError(null);
 
-    // Use Pollinations with style prompt - generates anime version
+    if (!isPaid) {
+      const newCount = usedCount + 1;
+      localStorage.setItem("geenie_anime_count", String(newCount));
+      setUsedCount(newCount);
+    }
+
     const seed = Math.floor(Math.random() * 999999);
-    const subject = customDesc.trim() ? `, ${customDesc}` : ', anime character portrait';
-    const fullPrompt = `${style.prompt}${subject}, high quality anime art, 4k detailed`;
-    const encoded = encodeURIComponent(fullPrompt);
-    const url = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&seed=${seed}&nologo=true&enhance=true`;
+    const subjectText = subject.trim() ? `, ${subject}` : ", anime character portrait";
+    const fullPrompt = encodeURIComponent(`${style.prompt}${subjectText}, high quality anime art, 4k detailed`);
+    const url = `https://image.pollinations.ai/prompt/${fullPrompt}?width=1024&height=1024&seed=${seed}&nologo=true&enhance=true`;
 
     const img = new window.Image();
-    img.crossOrigin = "anonymous";
     img.onload = () => { setResultUrl(url); setLoading(false); };
-    img.onerror = () => {
-      // retry with different seed
-      const seed2 = Math.floor(Math.random() * 999999);
-      const url2 = `https://image.pollinations.ai/prompt/${encoded}?width=512&height=512&seed=${seed2}&nologo=true`;
-      setResultUrl(url2);
-      setLoading(false);
-    };
+    img.onerror = () => { setError("Generation failed. Please try again."); setLoading(false); };
     img.src = url;
-    // Fallback after 25s
-    setTimeout(() => {
-      if (loading) { setResultUrl(url); setLoading(false); }
-    }, 25000);
+    setTimeout(() => { if (loading) { setResultUrl(url); setLoading(false); } }, 25000);
   }
 
-  function download() {
+  async function download() {
     if (!resultUrl) return;
-    const a = document.createElement("a");
-    a.href = resultUrl; a.download = `geenie-anime-${style.name.toLowerCase().replace(" ","-")}.jpg`;
-    a.target = "_blank"; a.click();
+    try {
+      const response = await fetch(resultUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `geenie-anime-${style.name.toLowerCase().replace(/ /g, "-")}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      window.open(resultUrl, "_blank");
+    }
   }
+
+  const grad = { background: "var(--gradient-brand)" };
 
   return (
-    <div className="flex flex-col gap-6 p-6 max-w-4xl mx-auto w-full">
+    <div className="flex flex-col gap-6 p-4 sm:p-6 max-w-4xl mx-auto w-full">
       <div className="flex items-center gap-3">
         <button onClick={() => navigate({ to: "/dashboard" })}
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition mr-1">
-          ← Back
-        </button>
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "linear-gradient(135deg, #a855f7, #ec4899)" }}>
+          className="text-xs text-muted-foreground hover:text-foreground transition mr-1">← Back</button>
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={grad}>
           <Sparkles className="h-5 w-5 text-white" />
         </div>
         <div>
           <h1 className="text-xl font-semibold">Anime Style</h1>
-          <p className="text-sm text-muted-foreground">Transform photos into anime characters · Add background music</p>
+          <p className="text-sm text-muted-foreground">Generate anime art in any style — describe your character</p>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-5 flex flex-col gap-5 backdrop-blur-sm">
+      <div className="glass rounded-2xl p-5 flex flex-col gap-5">
         {/* Style selector */}
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-2 block">Anime Style</label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {animeStyles.map((s) => (
+            {animeStyles.map(s => (
               <button key={s.name} onClick={() => setStyle(s)}
-                className={`rounded-xl px-3 py-2 text-xs font-medium transition ${style.name === s.name ? "text-white" : "bg-white/5 border border-white/10 text-muted-foreground hover:bg-white/10"}`}
-                style={style.name === s.name ? { background: "linear-gradient(135deg, #a855f7, #ec4899)" } : undefined}>
+                className={`rounded-xl px-3 py-2 text-xs font-medium transition ${style.name === s.name ? "text-white" : "bg-surface border border-border text-muted-foreground hover:bg-surface-elevated"}`}
+                style={style.name === s.name ? grad : undefined}>
                 {s.name}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Upload + Result */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-2 block">Your Photo</label>
-            <button onClick={() => fileInputRef.current?.click()}
-              className="w-full flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/20 bg-white/5 hover:border-purple-500/60 transition min-h-[200px] overflow-hidden">
-              {imageSrc
-                ? <img src={imageSrc} className="w-full h-full object-cover rounded-xl max-h-[200px]" alt="upload" />
-                : <><Upload className="h-7 w-7 text-muted-foreground" /><span className="text-xs text-muted-foreground">Click to upload photo</span><span className="text-[10px] text-muted-foreground/60">JPG, PNG, WEBP</span></>}
-            </button>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-2 block">Anime Result</label>
-            <div className="w-full flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/20 bg-white/5 min-h-[200px] overflow-hidden">
-              {loading
-                ? <><div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" /><span className="text-xs text-muted-foreground">Generating anime art...</span><span className="text-[10px] text-muted-foreground/60">~15–25 seconds</span></>
-                : resultUrl
-                  ? <img src={resultUrl} className="w-full h-full object-cover rounded-xl max-h-[200px]" alt="anime result"
-                      onError={() => setError("Generation failed. Try again.")} />
-                  : <span className="text-xs text-muted-foreground">Result appears here</span>}
-            </div>
-          </div>
+        {/* Subject description */}
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-2 block">
+            Describe your character <span className="opacity-60">(optional)</span>
+          </label>
+          <input value={subject} onChange={e => setSubject(e.target.value)}
+            placeholder="e.g. a young woman with long silver hair, a warrior with a sword, a cute cat..."
+            className="w-full rounded-xl bg-surface border border-border px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
         </div>
 
-        {error && (
-          <div className="flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3">
-            <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
-            <p className="text-xs text-red-400">{error}</p>
+        {/* Result */}
+        {(loading || resultUrl) && (
+          <div className="w-full flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-surface/50 min-h-[280px] overflow-hidden">
+            {loading
+              ? <><div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" /><span className="text-xs text-muted-foreground">Generating anime art... (15-25s)</span></>
+              : resultUrl
+                ? <img src={resultUrl} className="w-full object-contain rounded-xl max-h-[360px]" alt="anime result" onError={() => setError("Generation failed. Try again.")} />
+                : null}
           </div>
         )}
 
-
+        {error && (
+          <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+            <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
+            <p className="text-xs text-red-600">{error}</p>
+            {!isPaid && usedCount >= 5 && (
+              <a href="/#pricing" className="ml-auto text-xs font-medium text-orange-500 hover:underline shrink-0">Upgrade →</a>
+            )}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-3">
-          <button onClick={convert} disabled={loading}
+          <button onClick={convert} disabled={loading || (!isPaid && usedCount >= 5)}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white disabled:opacity-40 transition"
-            style={{ background: "linear-gradient(135deg, #a855f7, #ec4899)" }}>
-            <Sparkles className="h-4 w-4" />{loading ? "Converting..." : "Convert to Anime"}
+            style={grad}>
+            <Sparkles className="h-4 w-4" />{loading ? "Generating..." : "Generate Anime Art"}
           </button>
           {resultUrl && !loading && (
-            <button onClick={download} className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/15 px-4 py-3 text-sm font-medium hover:bg-white/10 transition">
-              <Download className="h-4 w-4" /> Save
-            </button>
+            <>
+              <button onClick={convert} className="flex items-center gap-2 rounded-xl bg-surface border border-border px-4 py-3 text-sm font-medium hover:bg-surface-elevated transition">
+                <RefreshCw className="h-4 w-4" />
+              </button>
+              <button onClick={download} className="flex items-center gap-2 rounded-xl bg-surface border border-border px-4 py-3 text-sm font-medium hover:bg-surface-elevated transition">
+                <Download className="h-4 w-4" />
+              </button>
+            </>
           )}
         </div>
-        {(() => {
-          const used = typeof window !== "undefined" ? parseInt(localStorage.getItem("geenie_anime_count") || "0") : 0;
-          const plan = typeof window !== "undefined" ? (localStorage.getItem("geenie_plan") || "starter") : "starter";
-          const remaining = 5 - used;
-          return plan === "starter" ? (
-            <p className="text-xs text-center text-muted-foreground">
-              {remaining > 0 ? `${remaining} free conversions remaining · ` : "⚠️ Limit reached · "}
-              <a href="/#pricing" className="text-orange-500 font-medium hover:underline">Upgrade for unlimited →</a>
-            </p>
-          ) : (
-            <p className="text-xs text-center text-muted-foreground">Unlimited · Creator Plan · Powered by Pollinations AI</p>
-          );
-        })()}
+
+        {/* Usage counter */}
+        <p className="text-xs text-center text-muted-foreground">
+          {isPaid
+            ? "Unlimited generations · Creator Plan · Powered by Pollinations AI"
+            : remaining > 0
+              ? `${remaining} free generations remaining · `
+              : "⚠️ Limit reached · "}
+          {!isPaid && <a href="/#pricing" className="text-orange-500 font-medium hover:underline">Upgrade for unlimited →</a>}
+        </p>
       </div>
     </div>
   );
