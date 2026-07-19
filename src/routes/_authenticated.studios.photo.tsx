@@ -60,6 +60,7 @@ function PhotoEditor() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<string | null>(null);
+  const [aiError, setAiError] = useState(false);
   const [smartPrompt, setSmartPrompt] = useState("");
   const [smartLoading, setSmartLoading] = useState(false);
   const [smartMsg, setSmartMsg] = useState("");
@@ -93,15 +94,24 @@ function PhotoEditor() {
 
   async function generateAI() {
     if (!aiPrompt.trim()) return;
-    setAiLoading(true); setAiResult(null);
-    const seed = Math.floor(Math.random() * 99999);
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(aiPrompt + ", high quality, professional photography")}?width=1024&height=1024&seed=${seed}&nologo=true&enhance=true`;
-    setAiResult(url);
+    setAiLoading(true); setAiResult(null); setAiError(false);
+    const seed = Math.floor(Math.random() * 999999);
+    // Try with enhance first, fallback without
+    const prompt = encodeURIComponent(aiPrompt + ", high quality, 4k, detailed");
+    const url = `https://image.pollinations.ai/prompt/${prompt}?width=1024&height=1024&seed=${seed}&nologo=true`;
     const img = new window.Image();
-    img.onload = () => setAiLoading(false);
-    img.onerror = () => setAiLoading(false);
+    img.crossOrigin = "anonymous";
+    img.onload = () => { setAiResult(url); setAiLoading(false); };
+    img.onerror = () => {
+      // Retry with smaller size
+      const url2 = `https://image.pollinations.ai/prompt/${prompt}?width=512&height=512&seed=${seed + 1}&nologo=true`;
+      const img2 = new window.Image();
+      img2.onload = () => { setAiResult(url2); setAiLoading(false); };
+      img2.onerror = () => { setAiLoading(false); setAiError(true); };
+      img2.src = url2;
+    };
     img.src = url;
-    setTimeout(() => setAiLoading(false), 25000);
+    setTimeout(() => { if (aiLoading) setAiLoading(false); }, 30000);
   }
 
   function generateAIBg() {
@@ -353,7 +363,8 @@ function PhotoEditor() {
           <button onClick={generateAI} disabled={aiLoading || !aiPrompt.trim()} className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white disabled:opacity-50" style={grad}>
             <Sparkles className="h-4 w-4" />{aiLoading ? "Generating... (15-20s)" : "Generate Image"}
           </button>
-          {aiLoading && <div className="flex flex-col items-center gap-2 py-8"><div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" /><p className="text-xs text-muted-foreground">Creating your image...</p></div>}
+          {aiLoading && <div className="flex flex-col items-center gap-2 py-8"><div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" /><p className="text-xs text-muted-foreground">Creating your image... (15-30s)</p></div>}
+          {aiError && !aiLoading && <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3"><p className="text-xs text-red-600">⚠️ Generation failed. Pollinations AI may be busy. Please try again in a few seconds.</p></div>}
           {aiResult && !aiLoading && (
             <div className="flex flex-col gap-3">
               <img src={aiResult} alt="AI generated" className="w-full rounded-xl object-cover" />

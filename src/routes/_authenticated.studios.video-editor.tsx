@@ -143,7 +143,7 @@ function VideoEditor() {
         </div>
         <div>
           <h1 className="text-xl font-semibold">Video Editor</h1>
-          <p className="text-sm text-muted-foreground">Edit Reels & Shorts · Add music · Apply filters</p>
+          <p className="text-sm text-muted-foreground">Edit Reels & Shorts · Apply filters · Add text</p>
         </div>
       </div>
 
