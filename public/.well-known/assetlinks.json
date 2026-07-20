@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.geenie.aistudio",
+    "sha256_cert_fingerprints": [
+      "5D:CD:9A:0C:07:48:9A:68:27:1C:A9:ED:15:3F:D5:03:16:94:A7:FF"
+    ]
+  }
+}]
