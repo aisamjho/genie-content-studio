@@ -66,6 +66,10 @@ function PhotoEditor() {
   const [smartMsg, setSmartMsg] = useState("");
   const [textOverlay, setTextOverlay] = useState("");
   const [textColor, setTextColor] = useState("#ffffff");
+  const [textSize, setTextSize] = useState(32);
+  const [textX, setTextX] = useState(50);
+  const [textY, setTextY] = useState(85);
+  const [textBg, setTextBg] = useState(false);
   const [plan, setPlan] = useState("starter");
   const fileRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -172,13 +176,20 @@ function PhotoEditor() {
       ctx.restore();
       // Text overlay
       if (textOverlay) {
-        ctx.font = `bold ${Math.max(24, canvas.width / 20)}px sans-serif`;
-        ctx.fillStyle = textColor;
-        ctx.strokeStyle = "rgba(0,0,0,0.5)";
-        ctx.lineWidth = 3;
+        const tx = (textX / 100) * canvas.width;
+        const ty = (textY / 100) * canvas.height;
+        ctx.font = `bold ${textSize}px sans-serif`;
         ctx.textAlign = "center";
-        ctx.strokeText(textOverlay, canvas.width / 2, canvas.height - 40);
-        ctx.fillText(textOverlay, canvas.width / 2, canvas.height - 40);
+        if (textBg) {
+          const metrics = ctx.measureText(textOverlay);
+          ctx.fillStyle = "rgba(0,0,0,0.5)";
+          ctx.fillRect(tx - metrics.width/2 - 8, ty - textSize, metrics.width + 16, textSize + 8);
+        }
+        ctx.fillStyle = textColor;
+        ctx.strokeStyle = "rgba(0,0,0,0.6)";
+        ctx.lineWidth = 2;
+        ctx.strokeText(textOverlay, tx, ty);
+        ctx.fillText(textOverlay, tx, ty);
       }
       // Watermark for free
       if (!isPaid && tab !== "AI Generate") {
@@ -239,8 +250,11 @@ function PhotoEditor() {
             <div className="rounded-2xl overflow-hidden bg-black/10 flex items-center justify-center min-h-[280px] relative">
               {previewImg}
               {textOverlay && (
-                <div className="absolute bottom-6 left-0 right-0 flex justify-center px-4">
-                  <p className="text-center font-bold px-3 py-1 rounded" style={{ color: textColor, textShadow: "2px 2px 4px rgba(0,0,0,0.7)", fontSize: "1.4rem" }}>{textOverlay}</p>
+                <div className="absolute" style={{ left: `${textX}%`, top: `${textY}%`, transform: "translate(-50%, -50%)" }}>
+                  <p className="font-bold whitespace-nowrap px-2 py-0.5 rounded"
+                    style={{ color: textColor, textShadow: "2px 2px 4px rgba(0,0,0,0.7)", fontSize: `${textSize * 0.4}px`, background: textBg ? "rgba(0,0,0,0.5)" : "transparent" }}>
+                    {textOverlay}
+                  </p>
                 </div>
               )}
               {vignette && <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: "inset 0 0 80px rgba(0,0,0,0.6)" }} />}
@@ -269,13 +283,27 @@ function PhotoEditor() {
             <Slider icon={Contrast} label="Contrast" value={contrast} onChange={setContrast} min={50} max={150} />
             <Slider icon={Droplet} label="Saturation" value={saturation} onChange={setSaturation} min={0} max={200} />
             {/* Text overlay */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block flex items-center gap-1"><Type className="h-3 w-3" /> Text Overlay</label>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1"><Type className="h-3 w-3" /> Text Overlay</label>
               <input value={textOverlay} onChange={e => setTextOverlay(e.target.value)} placeholder="Add text to photo..." className="w-full rounded-xl bg-surface border border-border px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-orange-500" />
-              <div className="flex items-center gap-2 mt-1.5">
-                <label className="text-[11px] text-muted-foreground">Color:</label>
+              <div className="flex items-center gap-2">
+                <label className="text-[11px] text-muted-foreground shrink-0">Color:</label>
                 <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-10 rounded border border-border cursor-pointer" />
+                <label className="text-[11px] text-muted-foreground shrink-0 ml-2">Size:</label>
+                <input type="range" min={16} max={80} value={textSize} onChange={e => setTextSize(Number(e.target.value))} className="flex-1 accent-orange-500" />
               </div>
+              <div>
+                <label className="text-[11px] text-muted-foreground block mb-1">Position X: {textX}%</label>
+                <input type="range" min={5} max={95} value={textX} onChange={e => setTextX(Number(e.target.value))} className="w-full accent-orange-500" />
+              </div>
+              <div>
+                <label className="text-[11px] text-muted-foreground block mb-1">Position Y: {textY}%</label>
+                <input type="range" min={5} max={95} value={textY} onChange={e => setTextY(Number(e.target.value))} className="w-full accent-orange-500" />
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={textBg} onChange={e => setTextBg(e.target.checked)} className="accent-orange-500" />
+                <span className="text-[11px] text-muted-foreground">Text background</span>
+              </label>
             </div>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={vignette} onChange={e => setVignette(e.target.checked)} className="accent-orange-500" />
