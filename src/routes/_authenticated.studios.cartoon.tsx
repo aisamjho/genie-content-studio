@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef } from "react";
-import { Upload, Download, Sparkles, RefreshCw } from "lucide-react";
+import { Upload, Download, Sparkles, RefreshCw, Dice5 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/studios/cartoon")({
   head: () => ({ meta: [{ title: "Cartoon & Comic Style — Geenie AI Studio" }] }),
@@ -22,6 +22,19 @@ const STYLES = [
   { name: "Anime Movie", emoji: "🌸", prompt: "Studio Ghibli Makoto Shinkai anime movie quality, detailed cinematic anime illustration" },
 ];
 
+const surpriseSubjects = [
+  "a man with glasses and a beard",
+  "a cat wearing a tiny hat",
+  "a superhero flying through the city",
+  "a chef cooking in a busy kitchen",
+  "a dog skateboarding down a street",
+  "a grandma baking cookies",
+  "a robot playing guitar",
+  "a knight in shining armor",
+  "a kid riding a bicycle at sunset",
+  "a detective examining clues with a magnifying glass",
+];
+
 function CartoonStudio() {
   const navigate = useNavigate();
   const [style, setStyle] = useState(STYLES[0]);
@@ -32,7 +45,7 @@ function CartoonStudio() {
   const fileRef = useRef<HTMLInputElement>(null);
   const requestIdRef = useRef(0);
 
-  function generate() {
+  function generate(styleOverride?: typeof STYLES[0], descOverride?: string) {
     // A unique id for this specific request. If the user clicks Generate
     // or Try Again again before this one finishes, any late-arriving
     // onload/onerror/timeout from THIS call becomes stale and is ignored —
@@ -40,9 +53,14 @@ function CartoonStudio() {
     const myId = ++requestIdRef.current;
 
     setLoading(true); setResult(null); setError(null);
+    // Overrides let Surprise Me set state and generate in the same click —
+    // reading component state directly here would still see the
+    // pre-update values since React state updates aren't synchronous.
+    const useStyle = styleOverride ?? style;
+    const useDesc = descOverride !== undefined ? descOverride : desc;
     const seed = Math.floor(Math.random() * 999999);
-    const subject = desc.trim() ? `, ${desc}` : ", portrait character";
-    const prompt = encodeURIComponent(`${style.prompt}${subject}, high quality illustration`);
+    const subject = useDesc.trim() ? `, ${useDesc}` : ", portrait character";
+    const prompt = encodeURIComponent(`${useStyle.prompt}${subject}, high quality illustration`);
     const url = `https://image.pollinations.ai/prompt/${prompt}?width=1024&height=1024&seed=${seed}&nologo=true&enhance=true`;
 
     const img = new window.Image();
@@ -63,6 +81,14 @@ function CartoonStudio() {
       setError("This is taking longer than expected. Please try again.");
       setLoading(false);
     }, 25000);
+  }
+
+  function surpriseMe() {
+    const randomStyle = STYLES[Math.floor(Math.random() * STYLES.length)];
+    const randomSubject = surpriseSubjects[Math.floor(Math.random() * surpriseSubjects.length)];
+    setStyle(randomStyle);
+    setDesc(randomSubject);
+    generate(randomStyle, randomSubject);
   }
 
   async function download() {
@@ -116,9 +142,15 @@ function CartoonStudio() {
 
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-2 block">Describe your subject <span className="opacity-60">(optional)</span></label>
-          <input value={desc} onChange={e => setDesc(e.target.value)}
-            placeholder="e.g. a man with glasses and beard, a cat sitting on a chair, a superhero..."
-            className="w-full rounded-xl bg-surface border border-border px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+          <div className="flex gap-2">
+            <input value={desc} onChange={e => setDesc(e.target.value)}
+              placeholder="e.g. a man with glasses and beard, a cat sitting on a chair, a superhero..."
+              className="flex-1 rounded-xl bg-surface border border-border px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+            <button onClick={surpriseMe} disabled={loading} title="Surprise me — random style and subject"
+              className="flex items-center gap-1.5 rounded-xl bg-surface border border-border px-3 py-2.5 text-xs font-medium hover:bg-surface-elevated transition disabled:opacity-40 shrink-0">
+              <Dice5 className="h-4 w-4" /> Surprise Me
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -141,13 +173,13 @@ function CartoonStudio() {
               <p className="text-xs text-orange-600 mt-1">Add a description below to personalise your art, or just click Generate.</p>
             </div>
             {error && <p className="text-xs text-red-600 bg-red-50 rounded-xl px-3 py-2">⚠️ {error}</p>}
-            <button onClick={generate} disabled={loading}
+            <button onClick={() => generate()} disabled={loading}
               className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white disabled:opacity-50 transition" style={grad}>
               <Sparkles className="h-4 w-4" />{loading ? "Generating..." : `Create ${style.name} Art`}
             </button>
             {result && !loading && (
               <>
-                <button onClick={generate} className="flex items-center justify-center gap-2 rounded-xl bg-surface border border-border px-4 py-2.5 text-sm font-medium hover:bg-surface-elevated transition">
+                <button onClick={() => generate()} className="flex items-center justify-center gap-2 rounded-xl bg-surface border border-border px-4 py-2.5 text-sm font-medium hover:bg-surface-elevated transition">
                   <RefreshCw className="h-4 w-4" />Try Again
                 </button>
                 <button onClick={download} className="flex items-center justify-center gap-2 rounded-xl bg-surface border border-border px-4 py-2.5 text-sm font-medium hover:bg-surface-elevated transition">

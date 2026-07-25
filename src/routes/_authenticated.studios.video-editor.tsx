@@ -21,10 +21,10 @@ const videoFilters = [
   { name: "Warm", css: "hue-rotate(-10deg) saturate(1.2)" },
   { name: "Dramatic", css: "contrast(1.5) brightness(0.85)" },
   { name: "Fade", css: "contrast(0.8) brightness(1.15) saturate(0.75)" },
-  { name: "Teal & Orange", css: "contrast(1.2) saturate(1.35) hue-rotate(-6deg)" },
-  { name: "Midnight", css: "contrast(1.3) brightness(0.82) saturate(0.75) hue-rotate(190deg)" },
-  { name: "Golden Hour", css: "brightness(1.12) saturate(1.25) sepia(0.18) hue-rotate(-8deg)" },
-  { name: "VHS Retro", css: "contrast(0.85) saturate(0.85) brightness(1.05) sepia(0.15) hue-rotate(340deg)" },
+  { name: "Teal & Orange", css: "contrast(1.2) saturate(1.35) hue-rotate(-6deg)", trending: true },
+  { name: "Midnight", css: "contrast(1.3) brightness(0.82) saturate(0.75) hue-rotate(190deg)", trending: true },
+  { name: "Golden Hour", css: "brightness(1.12) saturate(1.25) sepia(0.18) hue-rotate(-8deg)", trending: true },
+  { name: "VHS Retro", css: "contrast(0.85) saturate(0.85) brightness(1.05) sepia(0.15) hue-rotate(340deg)", trending: true },
 ];
 
 const textStyles = [
@@ -562,8 +562,9 @@ function VideoEditor() {
                   <div className="grid grid-cols-4 gap-2">
                     {videoFilters.map((f) => (
                       <button key={f.name} onClick={() => setActiveFilter(f)}
-                        className={`rounded-lg py-2 text-[10px] font-medium transition ${activeFilter.name === f.name ? "text-white" : "bg-surface border border-border text-muted-foreground"}`}
+                        className={`relative rounded-lg py-2 text-[10px] font-medium transition ${activeFilter.name === f.name ? "text-white" : "bg-surface border border-border text-muted-foreground"}`}
                         style={activeFilter.name === f.name ? { background: "var(--gradient-brand)" } : undefined}>
+                        {(f as { trending?: boolean }).trending && <span className="absolute -top-1.5 -right-1 text-[9px]" title="Trending">🔥</span>}
                         {f.name}
                       </button>
                     ))}
@@ -579,13 +580,13 @@ function VideoEditor() {
 
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={cinematicBars} onChange={(e) => setCinematicBars(e.target.checked)} className="accent-orange-500" />
-                    <span className="text-xs">🎞️ Cinematic Bars (letterbox)</span>
+                    <span className="text-xs flex items-center gap-1">🎞️ Cinematic Bars (letterbox) <span className="text-[9px] bg-orange-100 text-orange-600 px-1 rounded">🔥</span></span>
                   </label>
 
                   <div>
                     <label className="flex items-center gap-2 cursor-pointer mb-1.5">
                       <input type="checkbox" checked={filmGrain} onChange={(e) => setFilmGrain(e.target.checked)} className="accent-orange-500" />
-                      <span className="text-xs">🎬 Film Grain</span>
+                      <span className="text-xs flex items-center gap-1">🎬 Film Grain <span className="text-[9px] bg-orange-100 text-orange-600 px-1 rounded">🔥</span></span>
                     </label>
                     {filmGrain && (
                       <input type="range" min={10} max={100} value={grainIntensity} onChange={(e) => setGrainIntensity(Number(e.target.value))} className="w-full accent-orange-500" />

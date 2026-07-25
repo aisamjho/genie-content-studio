@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
-import { Upload, Download, RotateCcw, Sun, Contrast, Droplet, Palette, Sparkles, RefreshCw, Zap, Image as ImageIcon, FlipHorizontal, Type, Film, Wand2 } from "lucide-react";
+import { Upload, Download, RotateCcw, Sun, Contrast, Droplet, Palette, Sparkles, RefreshCw, Zap, Image as ImageIcon, FlipHorizontal, Type, Film, Wand2, X, Bookmark } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/studios/photo")({
   head: () => ({ meta: [{ title: "Photo Editor — Geenie AI Studio" }] }),
@@ -24,10 +24,10 @@ const filters = [
   { name: "Chrome", css: "contrast(1.2) brightness(1.1) saturate(0.8) hue-rotate(5deg)" },
   { name: "Neon", css: "saturate(2) contrast(1.3) brightness(0.9) hue-rotate(30deg)" },
   { name: "Lomo", css: "contrast(1.3) saturate(1.4) sepia(0.2) brightness(0.9)" },
-  { name: "Teal & Orange", css: "contrast(1.2) saturate(1.35) hue-rotate(-6deg) brightness(1.02)" },
-  { name: "Midnight", css: "contrast(1.3) brightness(0.82) saturate(0.75) hue-rotate(190deg)" },
-  { name: "Golden Hour", css: "brightness(1.12) saturate(1.25) sepia(0.18) hue-rotate(-8deg)" },
-  { name: "VHS Retro", css: "contrast(0.85) saturate(0.85) brightness(1.05) sepia(0.15) hue-rotate(340deg)" },
+  { name: "Teal & Orange", css: "contrast(1.2) saturate(1.35) hue-rotate(-6deg) brightness(1.02)", trending: true },
+  { name: "Midnight", css: "contrast(1.3) brightness(0.82) saturate(0.75) hue-rotate(190deg)", trending: true },
+  { name: "Golden Hour", css: "brightness(1.12) saturate(1.25) sepia(0.18) hue-rotate(-8deg)", trending: true },
+  { name: "VHS Retro", css: "contrast(0.85) saturate(0.85) brightness(1.05) sepia(0.15) hue-rotate(340deg)", trending: true },
 ];
 
 const bgs = [
@@ -48,6 +48,26 @@ const LIGHT_LEAK_POS: Record<string, { x: string; y: string }> = {
   "bottom-right": { x: "85%", y: "85%" },
 };
 type LeakCorner = keyof typeof LIGHT_LEAK_POS;
+
+/** A saved combination of filter + cinematic settings, stored in
+ *  localStorage so users can reapply a full "look" in one click instead of
+ *  re-toggling everything each time. */
+interface Preset {
+  name: string;
+  filterName: string;
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  warmth: number;
+  vignette: boolean;
+  cinematicBars: boolean;
+  filmGrain: boolean;
+  grainIntensity: number;
+  lightLeak: boolean;
+  leakCorner: LeakCorner;
+  chromaticAb: boolean;
+  chromaticAmount: number;
+}
 
 const TABS = ["Edit", "Enhance", "Cinematic", "Smart Edit", "AI Generate", "Background"] as const;
 type Tab = typeof TABS[number];
@@ -221,6 +241,10 @@ function PhotoEditor() {
   const [leakCorner, setLeakCorner] = useState<LeakCorner>("bottom-right");
   const [chromaticAb, setChromaticAb] = useState(false);
   const [chromaticAmount, setChromaticAmount] = useState(4);
+  const [compareMode, setCompareMode] = useState(false);
+  const [comparePos, setComparePos] = useState(50);
+  const [presets, setPresets] = useState<Preset[]>([]);
+  const [presetNameInput, setPresetNameInput] = useState("");
   const [plan, setPlan] = useState("starter");
   const [downloadError, setDownloadError] = useState<string | null>(null);
   const [noiseTileUrl, setNoiseTileUrl] = useState<string | null>(null);
@@ -238,6 +262,42 @@ function PhotoEditor() {
     const tile = makeNoiseCanvas(180, 180);
     setNoiseTileUrl(tile.toDataURL());
   }, []);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = JSON.parse(localStorage.getItem("geenie_photo_presets") || "[]");
+      if (Array.isArray(saved)) setPresets(saved);
+    } catch { /* corrupted or missing — start with an empty preset list */ }
+  }, []);
+
+  function savePreset() {
+    const name = presetNameInput.trim();
+    if (!name || typeof window === "undefined") return;
+    const preset: Preset = {
+      name, filterName: activeFilter.name, brightness, contrast, saturation, warmth,
+      vignette, cinematicBars, filmGrain, grainIntensity, lightLeak, leakCorner, chromaticAb, chromaticAmount,
+    };
+    // Overwrite any existing preset with the same name rather than duplicate.
+    const updated = [...presets.filter(p => p.name !== name), preset];
+    setPresets(updated);
+    localStorage.setItem("geenie_photo_presets", JSON.stringify(updated));
+    setPresetNameInput("");
+  }
+
+  function applyPreset(p: Preset) {
+    const f = filters.find(x => x.name === p.filterName) ?? filters[0];
+    setActiveFilter(f);
+    setBrightness(p.brightness); setContrast(p.contrast); setSaturation(p.saturation); setWarmth(p.warmth);
+    setVignette(p.vignette); setCinematicBars(p.cinematicBars); setFilmGrain(p.filmGrain); setGrainIntensity(p.grainIntensity);
+    setLightLeak(p.lightLeak); setLeakCorner(p.leakCorner); setChromaticAb(p.chromaticAb); setChromaticAmount(p.chromaticAmount);
+  }
+
+  function deletePreset(name: string) {
+    if (typeof window === "undefined") return;
+    const updated = presets.filter(p => p.name !== name);
+    setPresets(updated);
+    localStorage.setItem("geenie_photo_presets", JSON.stringify(updated));
+  }
 
   const isPaid = plan === "creator" || plan === "studio";
   const warmthFilter = warmth !== 0 ? `hue-rotate(${warmth < 0 ? warmth : 0}deg) sepia(${warmth > 0 ? (warmth / 100) * 0.4 : 0})` : "";
@@ -507,8 +567,11 @@ function PhotoEditor() {
               <div className="grid grid-cols-4 gap-1.5">
                 {filters.map(f => (
                   <button key={f.name} onClick={() => setActiveFilter(f)}
-                    className={`rounded-lg py-2 text-[10px] font-medium transition ${activeFilter.name === f.name ? "text-white" : "bg-surface border border-border text-muted-foreground"}`}
-                    style={activeFilter.name === f.name ? grad : undefined}>{f.name}</button>
+                    className={`relative rounded-lg py-2 text-[10px] font-medium transition ${activeFilter.name === f.name ? "text-white" : "bg-surface border border-border text-muted-foreground"}`}
+                    style={activeFilter.name === f.name ? grad : undefined}>
+                    {(f as { trending?: boolean }).trending && <span className="absolute -top-1.5 -right-1 text-[9px]" title="Trending">🔥</span>}
+                    {f.name}
+                  </button>
                 ))}
               </div>
             </div>
@@ -591,23 +654,47 @@ function PhotoEditor() {
       {tab === "Cinematic" && imageSrc && (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
           <div className="flex flex-col gap-3">
-            <div className="rounded-2xl overflow-hidden bg-black/10 flex items-center justify-center min-h-[280px] relative">
-              {chromaticAb ? (
-                <div className="relative" style={{ transform: transformStyle }}>
-                  <img src={imageSrc} alt="rgb-red" style={{ filter: `${filterStyle} sepia(1) saturate(6) hue-rotate(-50deg) brightness(1.15)`, maxHeight: "480px" }}
-                    className="absolute inset-0 max-w-full object-contain" style={{ mixBlendMode: "screen", transform: `translateX(-${chromaticAmount}px)`, maxHeight: "480px" }} />
-                  <img src={imageSrc} alt="rgb-cyan" style={{ filter: `${filterStyle} sepia(1) saturate(6) hue-rotate(140deg) brightness(1.15)`, maxHeight: "480px" }}
-                    className="absolute inset-0 max-w-full object-contain" style={{ mixBlendMode: "screen", transform: `translateX(${chromaticAmount}px)`, maxHeight: "480px" }} />
-                  <img src={imageSrc} alt="rgb-base" style={{ filter: filterStyle, maxHeight: "480px" }} className="relative max-w-full object-contain opacity-90" />
+            {compareMode ? (
+              <div className="relative w-full rounded-2xl overflow-hidden bg-black/10 select-none" style={{ minHeight: 280 }}>
+                <img src={imageSrc} alt="edited" style={{ filter: filterStyle, transform: transformStyle }} className="w-full object-contain block" />
+                <div className="absolute inset-0 overflow-hidden" style={{ clipPath: `inset(0 ${100 - comparePos}% 0 0)` }}>
+                  <img src={imageSrc} alt="original" className="w-full h-full object-contain" />
                 </div>
-              ) : previewImg}
-              <CinematicOverlayLayer
-                vignette={vignette} lightLeak={lightLeak} leakCorner={leakCorner}
-                filmGrain={filmGrain} noiseTileUrl={noiseTileUrl} grainIntensity={grainIntensity}
-                cinematicBars={cinematicBars}
-              />
+                <div className="absolute top-0 bottom-0 pointer-events-none" style={{ left: `${comparePos}%` }}>
+                  <div className="w-0.5 h-full bg-white shadow-lg" />
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-9 w-9 rounded-full bg-white shadow-lg flex items-center justify-center text-xs">↔</div>
+                </div>
+                <input type="range" min={0} max={100} value={comparePos} onChange={e => setComparePos(Number(e.target.value))}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize m-0" />
+                <span className="absolute top-2 left-2 text-[10px] bg-black/60 text-white px-2 py-0.5 rounded pointer-events-none">Before</span>
+                <span className="absolute top-2 right-2 text-[10px] bg-black/60 text-white px-2 py-0.5 rounded pointer-events-none">After</span>
+              </div>
+            ) : (
+              <div className="rounded-2xl overflow-hidden bg-black/10 flex items-center justify-center min-h-[280px] relative">
+                {chromaticAb ? (
+                  <div className="relative" style={{ transform: transformStyle }}>
+                    <img src={imageSrc} alt="rgb-red" style={{ filter: `${filterStyle} sepia(1) saturate(6) hue-rotate(-50deg) brightness(1.15)`, maxHeight: "480px" }}
+                      className="absolute inset-0 max-w-full object-contain" style={{ mixBlendMode: "screen", transform: `translateX(-${chromaticAmount}px)`, maxHeight: "480px" }} />
+                    <img src={imageSrc} alt="rgb-cyan" style={{ filter: `${filterStyle} sepia(1) saturate(6) hue-rotate(140deg) brightness(1.15)`, maxHeight: "480px" }}
+                      className="absolute inset-0 max-w-full object-contain" style={{ mixBlendMode: "screen", transform: `translateX(${chromaticAmount}px)`, maxHeight: "480px" }} />
+                    <img src={imageSrc} alt="rgb-base" style={{ filter: filterStyle, maxHeight: "480px" }} className="relative max-w-full object-contain opacity-90" />
+                  </div>
+                ) : previewImg}
+                <CinematicOverlayLayer
+                  vignette={vignette} lightLeak={lightLeak} leakCorner={leakCorner}
+                  filmGrain={filmGrain} noiseTileUrl={noiseTileUrl} grainIntensity={grainIntensity}
+                  cinematicBars={cinematicBars}
+                />
+              </div>
+            )}
+            <div className="flex gap-2">
+              <button onClick={() => setCompareMode(m => !m)}
+                className={`flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-medium transition ${compareMode ? "text-white" : "bg-surface border border-border text-muted-foreground hover:bg-surface-elevated"}`}
+                style={compareMode ? grad : undefined}>
+                <Wand2 className="h-4 w-4" />{compareMode ? "Comparing" : "Compare"}
+              </button>
+              <button onClick={download} className="flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white" style={grad}><Download className="h-4 w-4" />{isPaid ? "Download HD" : "Download (watermarked)"}</button>
             </div>
-            <button onClick={download} className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white" style={grad}><Download className="h-4 w-4" />{isPaid ? "Download HD" : "Download (watermarked)"}</button>
           </div>
           <div className="glass rounded-2xl p-4 flex flex-col gap-4">
             <p className="text-sm font-semibold flex items-center gap-1.5"><Film className="h-4 w-4 text-orange-500" />Cinematic Effects</p>
@@ -615,7 +702,7 @@ function PhotoEditor() {
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={cinematicBars} onChange={e => setCinematicBars(e.target.checked)} className="accent-orange-500" />
-                <span className="text-xs">🎞️ Cinematic Bars</span>
+                <span className="text-xs flex items-center gap-1">🎞️ Cinematic Bars <span className="text-[9px] bg-orange-100 text-orange-600 px-1 rounded">🔥 Trending</span></span>
               </label>
             </div>
             <p className="text-[11px] text-muted-foreground -mt-2">Widescreen letterbox — instant movie-frame look</p>
@@ -623,7 +710,7 @@ function PhotoEditor() {
             <div>
               <label className="flex items-center gap-2 cursor-pointer mb-1.5">
                 <input type="checkbox" checked={filmGrain} onChange={e => setFilmGrain(e.target.checked)} className="accent-orange-500" />
-                <span className="text-xs">🎬 Film Grain</span>
+                <span className="text-xs flex items-center gap-1">🎬 Film Grain <span className="text-[9px] bg-orange-100 text-orange-600 px-1 rounded">🔥 Trending</span></span>
               </label>
               {filmGrain && (
                 <input type="range" min={10} max={100} value={grainIntensity} onChange={e => setGrainIntensity(Number(e.target.value))} className="w-full accent-orange-500" />
@@ -658,6 +745,28 @@ function PhotoEditor() {
                 <input type="range" min={1} max={12} value={chromaticAmount} onChange={e => setChromaticAmount(Number(e.target.value))} className="w-full accent-orange-500" />
               )}
               <p className="text-[11px] text-muted-foreground">Retro VHS-glitch color split</p>
+            </div>
+
+            <div className="border-t border-border pt-3">
+              <p className="text-xs font-semibold mb-2 flex items-center gap-1.5"><Bookmark className="h-3.5 w-3.5 text-orange-500" />My Presets</p>
+              <div className="flex gap-1.5 mb-2">
+                <input value={presetNameInput} onChange={e => setPresetNameInput(e.target.value)} placeholder="Name this look..."
+                  className="flex-1 rounded-lg bg-surface border border-border px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                <button onClick={savePreset} disabled={!presetNameInput.trim()}
+                  className="rounded-lg px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40 shrink-0" style={grad}>Save</button>
+              </div>
+              {presets.length === 0 ? (
+                <p className="text-[11px] text-muted-foreground">Set up a look (filter + effects), then save it here for one-tap reuse.</p>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  {presets.map(p => (
+                    <div key={p.name} className="flex items-center gap-2 rounded-lg bg-surface border border-border px-2.5 py-1.5">
+                      <button onClick={() => applyPreset(p)} className="flex-1 text-left text-xs font-medium hover:text-orange-600 transition truncate">{p.name}</button>
+                      <button onClick={() => deletePreset(p.name)} className="text-muted-foreground hover:text-red-500 shrink-0"><X className="h-3 w-3" /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <p className="text-[11px] text-muted-foreground mt-1">💡 Try "Teal & Orange" or "Midnight" filters in the Edit tab combined with these for a full blockbuster grade.</p>

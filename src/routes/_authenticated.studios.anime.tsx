@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
-import { Download, Sparkles, RefreshCw, AlertCircle } from "lucide-react";
+import { Download, Sparkles, RefreshCw, AlertCircle, Dice5 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/studios/anime")({
   head: () => ({ meta: [{ title: "Anime Style — Geenie AI Studio" }] }),
@@ -16,6 +16,21 @@ const animeStyles = [
   { name: "Chibi", prompt: "super cute chibi anime character, big sparkling eyes, tiny body, kawaii style, pastel colors, adorable" },
   { name: "Cyberpunk", prompt: "cyberpunk anime character, neon lights, futuristic city background, glowing eyes, dystopian anime style" },
   { name: "Watercolor", prompt: "soft watercolor anime illustration, pastel dreamy colors, gentle brushwork, aesthetic anime style" },
+];
+
+// Fun subject prompts for "Surprise Me" — removes blank-page hesitation,
+// which is the single biggest drop-off point in AI generation tools.
+const surpriseSubjects = [
+  "a mysterious ninja standing on a rooftop at night",
+  "a fierce warrior princess with a glowing sword",
+  "a cute robot companion with big round eyes",
+  "a wise old wizard with a long beard and staff",
+  "a space explorer in a futuristic suit",
+  "a magical forest fairy surrounded by fireflies",
+  "a samurai swordsman under cherry blossoms",
+  "a steampunk inventor with brass goggles",
+  "a dragon rider soaring through clouds",
+  "a school student with a mysterious glowing pendant",
 ];
 
 function AnimeStudio() {
@@ -37,7 +52,7 @@ function AnimeStudio() {
   const isPaid = plan === "creator" || plan === "studio";
   const remaining = 5 - usedCount;
 
-  function convert() {
+  function convert(styleOverride?: typeof animeStyles[0], subjectOverride?: string) {
     if (!isPaid && usedCount >= 5) {
       setError("You've used all 5 free anime generations. Upgrade to Creator ($2/mo) for unlimited.");
       return;
@@ -57,9 +72,16 @@ function AnimeStudio() {
     // "stuck" reporting loading forever.
     const myId = ++requestIdRef.current;
 
+    // Use explicit overrides when provided (e.g. from Surprise Me, which
+    // sets state and generates in the same tick — reading component state
+    // directly here would still see the stale pre-update values since
+    // React state updates aren't applied synchronously).
+    const useStyle = styleOverride ?? style;
+    const useSubject = subjectOverride !== undefined ? subjectOverride : subject;
+
     const seed = Math.floor(Math.random() * 999999);
-    const subjectText = subject.trim() ? `, ${subject}` : ", anime character portrait";
-    const fullPrompt = encodeURIComponent(`${style.prompt}${subjectText}, high quality anime art, 4k detailed`);
+    const subjectText = useSubject.trim() ? `, ${useSubject}` : ", anime character portrait";
+    const fullPrompt = encodeURIComponent(`${useStyle.prompt}${subjectText}, high quality anime art, 4k detailed`);
     const url = `https://image.pollinations.ai/prompt/${fullPrompt}?width=1024&height=1024&seed=${seed}&nologo=true&enhance=true`;
 
     const img = new window.Image();
@@ -79,6 +101,18 @@ function AnimeStudio() {
       setError("This is taking longer than expected. Please try again.");
       setLoading(false);
     }, 25000);
+  }
+
+  function surpriseMe() {
+    if (!isPaid && usedCount >= 5) {
+      setError("You've used all 5 free anime generations. Upgrade to Creator ($2/mo) for unlimited.");
+      return;
+    }
+    const randomStyle = animeStyles[Math.floor(Math.random() * animeStyles.length)];
+    const randomSubject = surpriseSubjects[Math.floor(Math.random() * surpriseSubjects.length)];
+    setStyle(randomStyle);
+    setSubject(randomSubject);
+    convert(randomStyle, randomSubject);
   }
 
   async function download() {
@@ -135,9 +169,16 @@ function AnimeStudio() {
           <label className="text-xs font-medium text-muted-foreground mb-2 block">
             Describe your character <span className="opacity-60">(optional)</span>
           </label>
-          <input value={subject} onChange={e => setSubject(e.target.value)}
-            placeholder="e.g. a young woman with long silver hair, a warrior with a sword, a cute cat..."
-            className="w-full rounded-xl bg-surface border border-border px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+          <div className="flex gap-2">
+            <input value={subject} onChange={e => setSubject(e.target.value)}
+              placeholder="e.g. a young woman with long silver hair, a warrior with a sword, a cute cat..."
+              className="flex-1 rounded-xl bg-surface border border-border px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+            <button onClick={surpriseMe} disabled={loading || (!isPaid && usedCount >= 5)}
+              title="Surprise me — random style and subject"
+              className="flex items-center gap-1.5 rounded-xl bg-surface border border-border px-3 py-2.5 text-xs font-medium hover:bg-surface-elevated transition disabled:opacity-40 shrink-0">
+              <Dice5 className="h-4 w-4" /> Surprise Me
+            </button>
+          </div>
         </div>
 
         {/* Result */}
@@ -163,14 +204,14 @@ function AnimeStudio() {
 
         {/* Actions */}
         <div className="flex gap-3">
-          <button onClick={convert} disabled={loading || (!isPaid && usedCount >= 5)}
+          <button onClick={() => convert()} disabled={loading || (!isPaid && usedCount >= 5)}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white disabled:opacity-40 transition"
             style={grad}>
             <Sparkles className="h-4 w-4" />{loading ? "Generating..." : "Generate Anime Art"}
           </button>
           {resultUrl && !loading && (
             <>
-              <button onClick={convert} className="flex items-center gap-2 rounded-xl bg-surface border border-border px-4 py-3 text-sm font-medium hover:bg-surface-elevated transition">
+              <button onClick={() => convert()} className="flex items-center gap-2 rounded-xl bg-surface border border-border px-4 py-3 text-sm font-medium hover:bg-surface-elevated transition">
                 <RefreshCw className="h-4 w-4" />
               </button>
               <button onClick={download} className="flex items-center gap-2 rounded-xl bg-surface border border-border px-4 py-3 text-sm font-medium hover:bg-surface-elevated transition">

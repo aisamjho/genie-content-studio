@@ -300,7 +300,8 @@ function CarouselStudio() {
         <span className="text-xs text-muted-foreground self-center mr-1">Quick start:</span>
         {templates.map((t) => (
           <button key={t.name} onClick={() => applyTemplate(t)}
-            className="rounded-full bg-surface border border-border px-3 py-1.5 text-xs font-medium hover:bg-surface-elevated transition">
+            className="rounded-full bg-surface border border-border px-3 py-1.5 text-xs font-medium hover:bg-surface-elevated transition flex items-center gap-1">
+            {t.name === "Quote" && <span className="text-[9px]" title="Trending">🔥</span>}
             {t.name}
           </button>
         ))}
