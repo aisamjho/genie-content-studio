@@ -93,8 +93,10 @@ function CartoonStudio() {
 
   async function download() {
     if (!result) return;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     try {
-      const response = await fetch(result);
+      const response = await fetch(result, { signal: controller.signal });
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -107,6 +109,8 @@ function CartoonStudio() {
     } catch {
       // Fallback - open in new tab
       window.open(result, "_blank");
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 

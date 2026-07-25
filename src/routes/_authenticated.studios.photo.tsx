@@ -382,15 +382,24 @@ function PhotoEditor() {
   async function applySmartEdit() {
     if (!smartPrompt.trim() || !imageSrc) return;
     setSmartLoading(true); setSmartMsg("");
+    // Every other network call in this app times out after 25-30s so a
+    // slow or dropped connection can never leave a button stuck disabled
+    // forever. This fetch previously had no such guard — a hung request
+    // on a weak connection would leave "Applying..." showing indefinitely
+    // with no way to recover short of reloading the page.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
     try {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           model: "claude-sonnet-4-6", max_tokens: 200,
           messages: [{ role: "user", content: `Convert this photo editing instruction to CSS filter values. Instruction: "${smartPrompt}". Current: brightness=${brightness}, contrast=${contrast}, saturation=${saturation}. Respond ONLY with JSON (no markdown): {"brightness":110,"contrast":120,"saturation":100,"blur":0,"filter":"","message":"Applied warm look"}` }]
         })
       });
+      if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const data = await res.json();
       const parsed = JSON.parse(data.content?.[0]?.text?.trim() ?? "{}");
       if (parsed.brightness) setBrightness(parsed.brightness);
@@ -400,8 +409,16 @@ function PhotoEditor() {
       if (parsed.filter !== undefined) setActiveFilter({ name: "Smart", css: parsed.filter });
       setSmartMsg(parsed.message || "Edit applied!");
       setSmartPrompt("");
-    } catch { setSmartMsg("Try: 'make it brighter' or 'add vintage look'"); }
-    setSmartLoading(false);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        setSmartMsg("Connection is slow — request timed out. Please try again.");
+      } else {
+        setSmartMsg("Try: 'make it brighter' or 'add vintage look'");
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      setSmartLoading(false);
+    }
   }
 
   /**

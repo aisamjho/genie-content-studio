@@ -117,8 +117,13 @@ function AnimeStudio() {
 
   async function download() {
     if (!resultUrl) return;
+    // A 15s bound so a slow or dropped connection falls back to opening the
+    // image in a new tab (still lets the user save it manually) instead of
+    // hanging with no feedback and no indication anything went wrong.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     try {
-      const response = await fetch(resultUrl);
+      const response = await fetch(resultUrl, { signal: controller.signal });
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -130,6 +135,8 @@ function AnimeStudio() {
       URL.revokeObjectURL(url);
     } catch {
       window.open(resultUrl, "_blank");
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 

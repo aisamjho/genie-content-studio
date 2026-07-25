@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 
 function NotFoundPage() {
@@ -116,8 +116,38 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    // Re-register the service worker on every load — this was previously
+    // being registered but the call was lost in an earlier rewrite of this
+    // file, silently disabling the offline app-shell cache (public/sw.js)
+    // for the whole app without any visible symptom.
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        // Registration can fail on some browsers/privacy modes — the app
+        // still works fully online, it just won't have an offline cache.
+      });
+    }
+
+    setIsOffline(!navigator.onLine);
+    const goOffline = () => setIsOffline(true);
+    const goOnline = () => setIsOffline(false);
+    window.addEventListener("offline", goOffline);
+    window.addEventListener("online", goOnline);
+    return () => {
+      window.removeEventListener("offline", goOffline);
+      window.removeEventListener("online", goOnline);
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
+      {isOffline && (
+        <div className="fixed top-0 left-0 right-0 z-[100] bg-red-500 text-white text-xs font-medium text-center py-1.5">
+          ⚠️ You're offline — some features need an internet connection. Reconnect to continue.
+        </div>
+      )}
       <Outlet />
       <Toaster
         position="top-right"
