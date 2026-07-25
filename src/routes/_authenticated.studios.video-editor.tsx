@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
-import { Upload, Download, Play, Pause, Sun, Contrast, RefreshCw, Film, AlertCircle } from "lucide-react";
+import { Upload, Download, Play, Pause, Sun, Contrast, RefreshCw, Film, AlertCircle, Music, X } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/studios/video-editor")({
   head: () => ({ meta: [{ title: "Video Editor — Geenie AI Studio" }] }),
@@ -81,7 +81,7 @@ function VideoEditor() {
   const [duration, setDuration] = useState(0);
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(100);
-  const [activeTab, setActiveTab] = useState<"filters"|"text"|"speed"|"trim"|"cinematic">("filters");
+  const [activeTab, setActiveTab] = useState<"filters"|"text"|"speed"|"trim"|"cinematic"|"music">("filters");
   const [aspect, setAspect] = useState<"9:16"|"1:1"|"16:9">("9:16");
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
@@ -94,7 +94,18 @@ function VideoEditor() {
   const [lightLeak, setLightLeak] = useState(false);
   const [leakCorner, setLeakCorner] = useState<LeakCorner>("bottom-right");
   const [noiseTileUrl, setNoiseTileUrl] = useState<string | null>(null);
+  // Music — uploaded MP3 only (not an online library). A cross-origin music
+  // URL would get silently muted by the Web Audio API's CORS protections
+  // when mixed into the export graph below, which is a failure mode users
+  // could never diagnose. A locally uploaded file has no such restriction.
+  const [musicSrc, setMusicSrc] = useState<string | null>(null);
+  const [musicName, setMusicName] = useState("");
+  const [musicVolume, setMusicVolume] = useState(80);
+  const [keepOriginalAudio, setKeepOriginalAudio] = useState(true);
+  const [originalVolume, setOriginalVolume] = useState(100);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const musicRef = useRef<HTMLAudioElement>(null);
+  const musicInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -102,6 +113,8 @@ function VideoEditor() {
 
   useEffect(() => { setSupported(isExportSupported()); }, []);
   useEffect(() => { if (videoRef.current && !exporting) videoRef.current.playbackRate = speed; }, [speed, exporting]);
+  useEffect(() => { if (musicRef.current) musicRef.current.volume = musicVolume / 100; }, [musicVolume]);
+  useEffect(() => { if (videoRef.current) videoRef.current.volume = keepOriginalAudio ? originalVolume / 100 : 0; }, [keepOriginalAudio, originalVolume]);
   useEffect(() => {
     if (typeof window === "undefined") return;
     const tile = makeNoiseTile(200);
@@ -117,12 +130,30 @@ function VideoEditor() {
     setExportError(null);
   }
 
+  function handleMusicUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setMusicSrc(URL.createObjectURL(file));
+    setMusicName(file.name.replace(/\.[^.]+$/, ""));
+  }
+
+  function removeMusic() {
+    setMusicSrc(null);
+    setMusicName("");
+    if (musicRef.current) musicRef.current.pause();
+  }
+
   function togglePlay() {
     if (!videoRef.current) return;
     if (playing) {
       videoRef.current.pause();
+      musicRef.current?.pause();
     } else {
       videoRef.current.play();
+      if (musicSrc && musicRef.current) {
+        musicRef.current.currentTime = 0;
+        musicRef.current.play().catch(() => {});
+      }
     }
     setPlaying(!playing);
   }
@@ -133,6 +164,7 @@ function VideoEditor() {
     const endTime = (trimEnd / 100) * duration;
     if (videoRef.current.currentTime >= endTime) {
       videoRef.current.pause();
+      musicRef.current?.pause();
       setPlaying(false);
       videoRef.current.currentTime = (trimStart / 100) * duration;
     }
@@ -171,6 +203,7 @@ function VideoEditor() {
     setExportError(null);
     setExportProgress(0);
     video.pause();
+    musicRef.current?.pause();
     setPlaying(false);
 
     const startTime = (trimStart / 100) * duration;
@@ -189,15 +222,53 @@ function VideoEditor() {
 
     const canvasStream = (canvas as any).captureStream(30) as MediaStream;
     let outputStream = canvasStream;
+    let mixCtx: AudioContext | null = null;
+    let exportMusicEl: HTMLAudioElement | null = null;
+
     try {
       const videoEl = video as any;
-      const mediaStream: MediaStream | undefined = videoEl.captureStream ? videoEl.captureStream() : videoEl.mozCaptureStream?.();
-      const audioTracks = mediaStream?.getAudioTracks?.() ?? [];
-      if (audioTracks.length) {
-        outputStream = new MediaStream([...canvasStream.getVideoTracks(), ...audioTracks]);
+      const videoMediaStream: MediaStream | undefined = videoEl.captureStream ? videoEl.captureStream() : videoEl.mozCaptureStream?.();
+      const videoAudioTracks = videoMediaStream?.getAudioTracks?.() ?? [];
+
+      if (musicSrc) {
+        // Mixing music in requires routing both the video's own audio and
+        // the uploaded track through a Web Audio graph into one combined
+        // destination stream — this is the actual mechanism that lets
+        // music end up baked INTO the downloaded file, not just playing
+        // alongside it on screen while recording only silence.
+        mixCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const dest = mixCtx.createMediaStreamDestination();
+
+        if (keepOriginalAudio && videoAudioTracks.length) {
+          const videoAudioSource = mixCtx.createMediaStreamSource(new MediaStream([videoAudioTracks[0]]));
+          const videoGain = mixCtx.createGain();
+          videoGain.gain.value = originalVolume / 100;
+          videoAudioSource.connect(videoGain).connect(dest);
+        }
+
+        // A fresh <audio> element dedicated to export (separate from the
+        // live-preview musicRef) — createMediaElementSource can only ever
+        // be called once per element, so reusing the preview element would
+        // throw on a second export.
+        exportMusicEl = new Audio(musicSrc);
+        exportMusicEl.loop = true;
+        const musicSource = mixCtx.createMediaElementSource(exportMusicEl);
+        const musicGain = mixCtx.createGain();
+        musicGain.gain.value = musicVolume / 100;
+        musicSource.connect(musicGain).connect(dest);
+
+        outputStream = new MediaStream([...canvasStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+      } else if (videoAudioTracks.length && keepOriginalAudio) {
+        outputStream = new MediaStream([...canvasStream.getVideoTracks(), ...videoAudioTracks]);
       }
+      // If keepOriginalAudio is off and there's no music, the export is
+      // intentionally silent (video-only track).
     } catch {
-      // No audio track available — export video-only, still works fine
+      // Audio mixing failed for any reason (unsupported browser, etc.) —
+      // fall back to a video-only export rather than crashing entirely.
+      setExportError("Audio mixing wasn't available on this device — exported without sound. Try Chrome or Edge for full audio support.");
+      mixCtx = null;
+      exportMusicEl = null;
     }
 
     const mimeType =
@@ -213,7 +284,10 @@ function VideoEditor() {
 
     recorder.start();
     video.playbackRate = speed;
-    try { await video.play(); } catch { /* autoplay restrictions — recorder still runs */ }
+    try {
+      if (exportMusicEl) { exportMusicEl.currentTime = 0; await exportMusicEl.play(); }
+      await video.play();
+    } catch { /* autoplay restrictions — recorder still runs */ }
 
     const barHeight = canvas.height * 0.09;
 
@@ -287,6 +361,11 @@ function VideoEditor() {
     await finished;
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
 
+    // Always tear down the export-only music element and audio graph,
+    // whether the export succeeded or the blob came back empty below.
+    exportMusicEl?.pause();
+    if (mixCtx) { try { await mixCtx.close(); } catch { /* already closed */ } }
+
     const blob = new Blob(chunks, { type: "video/webm" });
     if (blob.size === 0) {
       setExportError("Export produced an empty file. Please try again — this can happen if the tab was backgrounded during export.");
@@ -324,6 +403,7 @@ function VideoEditor() {
     { key: "filters" as const, label: "🎨" },
     { key: "cinematic" as const, label: "🎬" },
     { key: "text" as const, label: "✏️" },
+    { key: "music" as const, label: "🎵" },
     { key: "speed" as const, label: "⚡" },
     { key: "trim" as const, label: "✂️" },
   ];
@@ -419,6 +499,9 @@ function VideoEditor() {
 
             {hasCinematicFx && (
               <p className="text-[11px] text-center text-orange-600 bg-orange-50 rounded-lg py-1.5 w-full">🎬 Cinematic effects active — edit them in the 🎬 tab</p>
+            )}
+            {musicSrc && (
+              <p className="text-[11px] text-center text-orange-600 bg-orange-50 rounded-lg py-1.5 w-full">🎵 Music: {musicName} — will play in Preview and export</p>
             )}
 
             <div className="w-full">
@@ -548,6 +631,49 @@ function VideoEditor() {
                 </div>
               )}
 
+              {activeTab === "music" && (
+                <div className="flex flex-col gap-4">
+                  <p className="text-xs font-semibold flex items-center gap-1.5"><Music className="h-3.5 w-3.5 text-orange-500" />Background Music</p>
+
+                  {musicSrc ? (
+                    <div className="flex items-center gap-2 rounded-xl bg-orange-500/10 border border-orange-500/30 px-3 py-2">
+                      <Music className="h-4 w-4 text-orange-500 shrink-0" />
+                      <span className="text-xs font-medium text-orange-700 flex-1 truncate">{musicName}</span>
+                      <button onClick={removeMusic} className="text-muted-foreground hover:text-red-500"><X className="h-3.5 w-3.5" /></button>
+                    </div>
+                  ) : (
+                    <button onClick={() => musicInputRef.current?.click()}
+                      className="flex items-center justify-center gap-2 rounded-xl bg-surface border border-border px-4 py-2.5 text-sm font-medium hover:bg-surface-elevated transition">
+                      <Upload className="h-4 w-4" /> Upload MP3
+                    </button>
+                  )}
+
+                  {musicSrc && (
+                    <div>
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span>🎵 Music Volume</span><span>{musicVolume}%</span>
+                      </div>
+                      <input type="range" min={0} max={100} value={musicVolume} onChange={(e) => setMusicVolume(Number(e.target.value))} className="w-full accent-orange-500" />
+                    </div>
+                  )}
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={keepOriginalAudio} onChange={(e) => setKeepOriginalAudio(e.target.checked)} className="accent-orange-500" />
+                    <span className="text-xs">Keep original video audio</span>
+                  </label>
+                  {keepOriginalAudio && (
+                    <div>
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span>🔊 Original Volume</span><span>{originalVolume}%</span>
+                      </div>
+                      <input type="range" min={0} max={100} value={originalVolume} onChange={(e) => setOriginalVolume(Number(e.target.value))} className="w-full accent-orange-500" />
+                    </div>
+                  )}
+
+                  <p className="text-[11px] text-muted-foreground">Music is mixed into the exported file for real — plays back with the video everywhere, not just in this preview. Upload from your device only (no online library, to guarantee it actually works).</p>
+                </div>
+              )}
+
               {activeTab === "speed" && (
                 <div className="flex flex-col gap-3">
                   <p className="text-xs text-muted-foreground">Playback Speed</p>
@@ -587,6 +713,8 @@ function VideoEditor() {
       )}
 
       <input ref={fileInputRef} type="file" accept="video/*" onChange={handleUpload} className="hidden" />
+      <input ref={musicInputRef} type="file" accept="audio/*" onChange={handleMusicUpload} className="hidden" />
+      {musicSrc && <audio ref={musicRef} src={musicSrc} loop className="hidden" />}
       <canvas ref={canvasRef} className="hidden" />
     </div>
   );
