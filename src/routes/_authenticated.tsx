@@ -28,6 +28,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  Layers,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -92,6 +93,7 @@ function AuthenticatedLayout() {
           <NavItem to="/studios/video-editor" icon={Video} label="Video Editor" pathname={pathname} onClick={() => setSidebarOpen(false)} />
           <NavItem to="/studios/anime" icon={Sparkles} label="Anime Style" pathname={pathname} onClick={() => setSidebarOpen(false)} />
           <NavItem to="/studios/cartoon" icon={Palette} label="Cartoon & Comic" pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/carousel" icon={Layers} label="Carousel Maker" pathname={pathname} onClick={() => setSidebarOpen(false)} />
         </NavGroup>
 
         <NavGroup title="Account">

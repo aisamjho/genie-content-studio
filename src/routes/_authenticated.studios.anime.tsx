@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Download, Sparkles, RefreshCw, AlertCircle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/studios/anime")({
@@ -27,6 +27,7 @@ function AnimeStudio() {
   const [error, setError] = useState<string | null>(null);
   const [plan, setPlan] = useState("starter");
   const [usedCount, setUsedCount] = useState(0);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     setPlan(localStorage.getItem("geenie_plan") || "starter");
@@ -51,16 +52,33 @@ function AnimeStudio() {
       setUsedCount(newCount);
     }
 
+    // Track this request so a stale in-flight request (from a previous
+    // click, or one that hangs) can never overwrite a newer result or get
+    // "stuck" reporting loading forever.
+    const myId = ++requestIdRef.current;
+
     const seed = Math.floor(Math.random() * 999999);
     const subjectText = subject.trim() ? `, ${subject}` : ", anime character portrait";
     const fullPrompt = encodeURIComponent(`${style.prompt}${subjectText}, high quality anime art, 4k detailed`);
     const url = `https://image.pollinations.ai/prompt/${fullPrompt}?width=1024&height=1024&seed=${seed}&nologo=true&enhance=true`;
 
     const img = new window.Image();
-    img.onload = () => { setResultUrl(url); setLoading(false); };
-    img.onerror = () => { setError("Generation failed. Please try again."); setLoading(false); };
+    img.onload = () => {
+      if (requestIdRef.current !== myId) return; // superseded by a newer request
+      setResultUrl(url);
+      setLoading(false);
+    };
+    img.onerror = () => {
+      if (requestIdRef.current !== myId) return;
+      setError("Generation failed. Please try again.");
+      setLoading(false);
+    };
     img.src = url;
-    setTimeout(() => { if (loading) { setResultUrl(url); setLoading(false); } }, 25000);
+    setTimeout(() => {
+      if (requestIdRef.current !== myId) return; // already resolved or superseded
+      setError("This is taking longer than expected. Please try again.");
+      setLoading(false);
+    }, 25000);
   }
 
   async function download() {

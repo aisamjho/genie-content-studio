@@ -5,6 +5,7 @@ import {
   Image as ImageIcon, Film, Video, Wand2, PenLine,
   Briefcase, Palette, Mic, Sparkles, ArrowRight,
   Lock, Zap, TrendingUp, FolderOpen,
+  Layers,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -17,6 +18,7 @@ const studios = [
   { icon: Video,     name: "Video Editor", desc: "Edit Reels & Shorts — filters, text, speed, trim.", route: "/studios/video-editor" },
   { icon: Sparkles,  name: "Anime Style",  desc: "Turn your photo or video into anime characters.", route: "/studios/anime" },
   { icon: Palette,   name: "Cartoon & Comic", desc: "Disney, Pixar, Comics, Manga, Lego, Sticker styles.", route: "/studios/cartoon" },
+  { icon: Layers,    name: "Carousel Maker", desc: "Multi-slide Instagram carousels — quotes, tips, before/after.", route: "/studios/carousel" },
 ];
 
 function DashboardPage() {

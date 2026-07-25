@@ -30,19 +30,39 @@ function CartoonStudio() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const requestIdRef = useRef(0);
 
   function generate() {
+    // A unique id for this specific request. If the user clicks Generate
+    // or Try Again again before this one finishes, any late-arriving
+    // onload/onerror/timeout from THIS call becomes stale and is ignored —
+    // this is what prevents "regenerate gets stuck" and result mix-ups.
+    const myId = ++requestIdRef.current;
+
     setLoading(true); setResult(null); setError(null);
     const seed = Math.floor(Math.random() * 999999);
     const subject = desc.trim() ? `, ${desc}` : ", portrait character";
     const prompt = encodeURIComponent(`${style.prompt}${subject}, high quality illustration`);
     const url = `https://image.pollinations.ai/prompt/${prompt}?width=1024&height=1024&seed=${seed}&nologo=true&enhance=true`;
-    setResult(url);
+
     const img = new window.Image();
-    img.onload = () => setLoading(false);
-    img.onerror = () => { setError("Failed. Please try again."); setLoading(false); };
+    img.onload = () => {
+      if (requestIdRef.current !== myId) return;
+      setResult(url);
+      setLoading(false);
+    };
+    img.onerror = () => {
+      if (requestIdRef.current !== myId) return;
+      setResult(null); // clear so a broken image icon never shows next to the error
+      setError("Generation failed. Please try again.");
+      setLoading(false);
+    };
     img.src = url;
-    setTimeout(() => setLoading(false), 25000);
+    setTimeout(() => {
+      if (requestIdRef.current !== myId) return;
+      setError("This is taking longer than expected. Please try again.");
+      setLoading(false);
+    }, 25000);
   }
 
   async function download() {

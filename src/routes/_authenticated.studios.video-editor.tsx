@@ -7,6 +7,11 @@ export const Route = createFileRoute("/_authenticated/studios/video-editor")({
   component: VideoEditor,
 });
 
+// Standard filters + the same 2026 cinematic color-grade presets used in
+// Photo Editor, for a consistent look across the app. Because these are
+// plain CSS filter strings, they automatically flow into both the live
+// preview AND the exported file (see the draw loop in exportVideo below)
+// with zero extra plumbing.
 const videoFilters = [
   { name: "Original", css: "" },
   { name: "B&W", css: "grayscale(1)" },
@@ -16,6 +21,10 @@ const videoFilters = [
   { name: "Warm", css: "hue-rotate(-10deg) saturate(1.2)" },
   { name: "Dramatic", css: "contrast(1.5) brightness(0.85)" },
   { name: "Fade", css: "contrast(0.8) brightness(1.15) saturate(0.75)" },
+  { name: "Teal & Orange", css: "contrast(1.2) saturate(1.35) hue-rotate(-6deg)" },
+  { name: "Midnight", css: "contrast(1.3) brightness(0.82) saturate(0.75) hue-rotate(190deg)" },
+  { name: "Golden Hour", css: "brightness(1.12) saturate(1.25) sepia(0.18) hue-rotate(-8deg)" },
+  { name: "VHS Retro", css: "contrast(0.85) saturate(0.85) brightness(1.05) sepia(0.15) hue-rotate(340deg)" },
 ];
 
 const textStyles = [
@@ -27,10 +36,35 @@ const textStyles = [
 
 const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
+const LIGHT_LEAK_POS: Record<string, { x: string; y: string }> = {
+  "top-left": { x: "15%", y: "15%" },
+  "top-right": { x: "85%", y: "15%" },
+  "bottom-left": { x: "15%", y: "85%" },
+  "bottom-right": { x: "85%", y: "85%" },
+};
+type LeakCorner = keyof typeof LIGHT_LEAK_POS;
+
 function isExportSupported() {
   if (typeof window === "undefined") return false;
   const v = document.createElement("video");
   return typeof (v as any).captureStream === "function" && typeof window.MediaRecorder !== "undefined";
+}
+
+/** A single static noise tile, generated once and reused every export frame
+ *  (regenerating full-resolution noise 30 times a second would be far too
+ *  slow) — cheap to composite via drawImage + globalCompositeOperation. */
+function makeNoiseTile(size = 200): HTMLCanvasElement {
+  const c = document.createElement("canvas");
+  c.width = size; c.height = size;
+  const ctx = c.getContext("2d")!;
+  const imgData = ctx.createImageData(size, size);
+  const buf = imgData.data;
+  for (let i = 0; i < buf.length; i += 4) {
+    const v = Math.random() * 255;
+    buf[i] = v; buf[i + 1] = v; buf[i + 2] = v; buf[i + 3] = 255;
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return c;
 }
 
 function VideoEditor() {
@@ -47,19 +81,33 @@ function VideoEditor() {
   const [duration, setDuration] = useState(0);
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(100);
-  const [activeTab, setActiveTab] = useState<"filters"|"text"|"speed"|"trim">("filters");
+  const [activeTab, setActiveTab] = useState<"filters"|"text"|"speed"|"trim"|"cinematic">("filters");
   const [aspect, setAspect] = useState<"9:16"|"1:1"|"16:9">("9:16");
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [exportError, setExportError] = useState<string | null>(null);
   const [supported, setSupported] = useState(true);
+  // Cinematic effects — same trending "movie look" toggles as Photo Editor.
+  const [cinematicBars, setCinematicBars] = useState(false);
+  const [filmGrain, setFilmGrain] = useState(false);
+  const [grainIntensity, setGrainIntensity] = useState(35);
+  const [lightLeak, setLightLeak] = useState(false);
+  const [leakCorner, setLeakCorner] = useState<LeakCorner>("bottom-right");
+  const [noiseTileUrl, setNoiseTileUrl] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
+  const noiseTileRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => { setSupported(isExportSupported()); }, []);
   useEffect(() => { if (videoRef.current && !exporting) videoRef.current.playbackRate = speed; }, [speed, exporting]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const tile = makeNoiseTile(200);
+    noiseTileRef.current = tile;
+    setNoiseTileUrl(tile.toDataURL());
+  }, []);
 
   function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -103,8 +151,9 @@ function VideoEditor() {
 
   /**
    * Real video export: draws each video frame onto a canvas with the
-   * selected CSS filter + text overlay baked in, captures the canvas as a
-   * stream, mixes in the video's own audio track, and records it with
+   * selected CSS filter, cinematic overlays (grain / light leak / letterbox
+   * bars), and text overlay baked in, captures the canvas as a stream,
+   * mixes in the video's own audio track, and records it with
    * MediaRecorder. This produces an actual downloadable video file with
    * the edits applied — entirely client-side, no server or paid API.
    */
@@ -132,14 +181,12 @@ function VideoEditor() {
     const ctx = canvas.getContext("2d");
     if (!ctx) { setExporting(false); return; }
 
-    // Seek to trim start and wait for it to actually land there
     await new Promise<void>((resolve) => {
       const onSeeked = () => { video.removeEventListener("seeked", onSeeked); resolve(); };
       video.addEventListener("seeked", onSeeked);
       video.currentTime = startTime;
     });
 
-    // Build the output stream: canvas video frames + original audio track
     const canvasStream = (canvas as any).captureStream(30) as MediaStream;
     let outputStream = canvasStream;
     try {
@@ -168,11 +215,44 @@ function VideoEditor() {
     video.playbackRate = speed;
     try { await video.play(); } catch { /* autoplay restrictions — recorder still runs */ }
 
+    const barHeight = canvas.height * 0.09;
+
     const draw = () => {
       if (video.paused || video.ended) return;
       ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) ${activeFilter.css}`;
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       ctx.filter = "none";
+
+      if (lightLeak) {
+        const pos = LIGHT_LEAK_POS[leakCorner];
+        const cx = (parseFloat(pos.x) / 100) * canvas.width;
+        const cy = (parseFloat(pos.y) / 100) * canvas.height;
+        const r = Math.max(canvas.width, canvas.height) * 0.55;
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+        g.addColorStop(0, "rgba(255,175,90,0.5)");
+        g.addColorStop(0.4, "rgba(255,105,140,0.25)");
+        g.addColorStop(1, "rgba(255,105,140,0)");
+        ctx.save();
+        ctx.globalCompositeOperation = "screen";
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+      }
+
+      if (filmGrain && noiseTileRef.current) {
+        ctx.save();
+        ctx.globalAlpha = (grainIntensity / 100) * 0.45;
+        ctx.globalCompositeOperation = "overlay";
+        // Tile the small noise canvas across the frame instead of
+        // stretching it, so the grain stays fine-grained at any resolution.
+        const tile = noiseTileRef.current;
+        for (let y = 0; y < canvas.height; y += tile.height) {
+          for (let x = 0; x < canvas.width; x += tile.width) {
+            ctx.drawImage(tile, x, y);
+          }
+        }
+        ctx.restore();
+      }
 
       if (overlayText) {
         const fontSize = Math.round(canvas.width / 14);
@@ -184,6 +264,12 @@ function VideoEditor() {
         const y = canvas.height - canvas.height * 0.08;
         ctx.strokeText(overlayText, canvas.width / 2, y);
         ctx.fillText(overlayText, canvas.width / 2, y);
+      }
+
+      if (cinematicBars) {
+        ctx.fillStyle = "#000000";
+        ctx.fillRect(0, 0, canvas.width, barHeight);
+        ctx.fillRect(0, canvas.height - barHeight, canvas.width, barHeight);
       }
 
       const pct = ((video.currentTime - startTime) / Math.max(0.001, endTime - startTime)) * 100;
@@ -232,9 +318,11 @@ function VideoEditor() {
 
   const filterStyle = `brightness(${brightness}%) contrast(${contrast}%) ${activeFilter.css}`;
   const aspectClass = aspect === "9:16" ? "max-w-[260px]" : aspect === "1:1" ? "max-w-[360px]" : "max-w-full";
+  const hasCinematicFx = cinematicBars || filmGrain || lightLeak;
 
   const tabs = [
     { key: "filters" as const, label: "🎨" },
+    { key: "cinematic" as const, label: "🎬" },
     { key: "text" as const, label: "✏️" },
     { key: "speed" as const, label: "⚡" },
     { key: "trim" as const, label: "✂️" },
@@ -252,7 +340,7 @@ function VideoEditor() {
         </div>
         <div>
           <h1 className="text-xl font-semibold">Video Editor</h1>
-          <p className="text-sm text-muted-foreground">Edit Reels & Shorts · Filters, text, speed, trim — exports with edits applied</p>
+          <p className="text-sm text-muted-foreground">Filters, cinematic FX, text, speed, trim — exports with edits applied</p>
         </div>
       </div>
 
@@ -291,6 +379,18 @@ function VideoEditor() {
                 onLoadedMetadata={() => { if (videoRef.current) setDuration(videoRef.current.duration); }}
                 onEnded={() => setPlaying(false)}
               />
+              {lightLeak && (
+                <div className="absolute inset-0 pointer-events-none" style={{
+                  background: `radial-gradient(circle at ${LIGHT_LEAK_POS[leakCorner].x} ${LIGHT_LEAK_POS[leakCorner].y}, rgba(255,175,90,0.5), rgba(255,105,140,0.22) 40%, transparent 70%)`,
+                  mixBlendMode: "screen",
+                }} />
+              )}
+              {filmGrain && noiseTileUrl && (
+                <div className="absolute inset-0 pointer-events-none" style={{
+                  backgroundImage: `url(${noiseTileUrl})`, backgroundSize: "200px 200px", backgroundRepeat: "repeat",
+                  opacity: (grainIntensity / 100) * 0.45, mixBlendMode: "overlay",
+                }} />
+              )}
               {overlayText && (
                 <div className="absolute bottom-6 left-0 right-0 flex justify-center px-3">
                   <p className="text-center px-3 py-1 rounded-lg bg-black/30 backdrop-blur-sm"
@@ -298,6 +398,12 @@ function VideoEditor() {
                     {overlayText}
                   </p>
                 </div>
+              )}
+              {cinematicBars && (
+                <>
+                  <div className="absolute top-0 left-0 right-0 bg-black pointer-events-none" style={{ height: "9%" }} />
+                  <div className="absolute bottom-0 left-0 right-0 bg-black pointer-events-none" style={{ height: "9%" }} />
+                </>
               )}
               {exporting && (
                 <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3">
@@ -310,6 +416,10 @@ function VideoEditor() {
                 </div>
               )}
             </div>
+
+            {hasCinematicFx && (
+              <p className="text-[11px] text-center text-orange-600 bg-orange-50 rounded-lg py-1.5 w-full">🎬 Cinematic effects active — edit them in the 🎬 tab</p>
+            )}
 
             <div className="w-full">
               <input type="range" min={0} max={100}
@@ -377,6 +487,46 @@ function VideoEditor() {
                   </div>
                   <SliderRow icon={Sun} label="Brightness" value={brightness} onChange={setBrightness} min={50} max={150} />
                   <SliderRow icon={Contrast} label="Contrast" value={contrast} onChange={setContrast} min={50} max={150} />
+                </div>
+              )}
+
+              {activeTab === "cinematic" && (
+                <div className="flex flex-col gap-4">
+                  <p className="text-xs font-semibold flex items-center gap-1.5"><Film className="h-3.5 w-3.5 text-orange-500" />Cinematic Effects</p>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={cinematicBars} onChange={(e) => setCinematicBars(e.target.checked)} className="accent-orange-500" />
+                    <span className="text-xs">🎞️ Cinematic Bars (letterbox)</span>
+                  </label>
+
+                  <div>
+                    <label className="flex items-center gap-2 cursor-pointer mb-1.5">
+                      <input type="checkbox" checked={filmGrain} onChange={(e) => setFilmGrain(e.target.checked)} className="accent-orange-500" />
+                      <span className="text-xs">🎬 Film Grain</span>
+                    </label>
+                    {filmGrain && (
+                      <input type="range" min={10} max={100} value={grainIntensity} onChange={(e) => setGrainIntensity(Number(e.target.value))} className="w-full accent-orange-500" />
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 cursor-pointer mb-1.5">
+                      <input type="checkbox" checked={lightLeak} onChange={(e) => setLightLeak(e.target.checked)} className="accent-orange-500" />
+                      <span className="text-xs">☀️ Light Leak</span>
+                    </label>
+                    {lightLeak && (
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {(Object.keys(LIGHT_LEAK_POS) as LeakCorner[]).map((c) => (
+                          <button key={c} onClick={() => setLeakCorner(c)}
+                            className={`rounded-lg py-1.5 text-[10px] font-medium transition ${leakCorner === c ? "text-white" : "bg-surface border border-border text-muted-foreground"}`}
+                            style={leakCorner === c ? { background: "var(--gradient-brand)" } : undefined}>
+                            {c.split("-").map((w) => w[0].toUpperCase()).join("")}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">Combine with "Teal & Orange" or "Midnight" filters for a full blockbuster grade.</p>
                 </div>
               )}
 

@@ -20,6 +20,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedStudiosVideoEditorRouteImport } from './routes/_authenticated.studios.video-editor'
 import { Route as AuthenticatedStudiosPhotoRouteImport } from './routes/_authenticated.studios.photo'
 import { Route as AuthenticatedStudiosCartoonRouteImport } from './routes/_authenticated.studios.cartoon'
+import { Route as AuthenticatedStudiosCarouselRouteImport } from './routes/_authenticated.studios.carousel'
 import { Route as AuthenticatedStudiosAnimeRouteImport } from './routes/_authenticated.studios.anime'
 
 const TermsRoute = TermsRouteImport.update({
@@ -79,6 +80,12 @@ const AuthenticatedStudiosCartoonRoute =
     path: '/studios/cartoon',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedStudiosCarouselRoute =
+  AuthenticatedStudiosCarouselRouteImport.update({
+    id: '/studios/carousel',
+    path: '/studios/carousel',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedStudiosAnimeRoute =
   AuthenticatedStudiosAnimeRouteImport.update({
     id: '/studios/anime',
@@ -95,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/studios/anime': typeof AuthenticatedStudiosAnimeRoute
+  '/studios/carousel': typeof AuthenticatedStudiosCarouselRoute
   '/studios/cartoon': typeof AuthenticatedStudiosCartoonRoute
   '/studios/photo': typeof AuthenticatedStudiosPhotoRoute
   '/studios/video-editor': typeof AuthenticatedStudiosVideoEditorRoute
@@ -108,6 +116,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/studios/anime': typeof AuthenticatedStudiosAnimeRoute
+  '/studios/carousel': typeof AuthenticatedStudiosCarouselRoute
   '/studios/cartoon': typeof AuthenticatedStudiosCartoonRoute
   '/studios/photo': typeof AuthenticatedStudiosPhotoRoute
   '/studios/video-editor': typeof AuthenticatedStudiosVideoEditorRoute
@@ -123,6 +132,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/studios/anime': typeof AuthenticatedStudiosAnimeRoute
+  '/_authenticated/studios/carousel': typeof AuthenticatedStudiosCarouselRoute
   '/_authenticated/studios/cartoon': typeof AuthenticatedStudiosCartoonRoute
   '/_authenticated/studios/photo': typeof AuthenticatedStudiosPhotoRoute
   '/_authenticated/studios/video-editor': typeof AuthenticatedStudiosVideoEditorRoute
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/dashboard'
     | '/studios/anime'
+    | '/studios/carousel'
     | '/studios/cartoon'
     | '/studios/photo'
     | '/studios/video-editor'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/dashboard'
     | '/studios/anime'
+    | '/studios/carousel'
     | '/studios/cartoon'
     | '/studios/photo'
     | '/studios/video-editor'
@@ -165,6 +177,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/_authenticated/dashboard'
     | '/_authenticated/studios/anime'
+    | '/_authenticated/studios/carousel'
     | '/_authenticated/studios/cartoon'
     | '/_authenticated/studios/photo'
     | '/_authenticated/studios/video-editor'
@@ -259,6 +272,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudiosCartoonRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/studios/carousel': {
+      id: '/_authenticated/studios/carousel'
+      path: '/studios/carousel'
+      fullPath: '/studios/carousel'
+      preLoaderRoute: typeof AuthenticatedStudiosCarouselRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/studios/anime': {
       id: '/_authenticated/studios/anime'
       path: '/studios/anime'
@@ -272,6 +292,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedStudiosAnimeRoute: typeof AuthenticatedStudiosAnimeRoute
+  AuthenticatedStudiosCarouselRoute: typeof AuthenticatedStudiosCarouselRoute
   AuthenticatedStudiosCartoonRoute: typeof AuthenticatedStudiosCartoonRoute
   AuthenticatedStudiosPhotoRoute: typeof AuthenticatedStudiosPhotoRoute
   AuthenticatedStudiosVideoEditorRoute: typeof AuthenticatedStudiosVideoEditorRoute
@@ -280,6 +301,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedStudiosAnimeRoute: AuthenticatedStudiosAnimeRoute,
+  AuthenticatedStudiosCarouselRoute: AuthenticatedStudiosCarouselRoute,
   AuthenticatedStudiosCartoonRoute: AuthenticatedStudiosCartoonRoute,
   AuthenticatedStudiosPhotoRoute: AuthenticatedStudiosPhotoRoute,
   AuthenticatedStudiosVideoEditorRoute: AuthenticatedStudiosVideoEditorRoute,

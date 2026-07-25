@@ -12,6 +12,7 @@ import {
   Mic,
   Music,
   Sparkles,
+  Layers,
   ArrowRight,
   Check,
   Zap,
@@ -63,6 +64,11 @@ const studios = [
     icon: Palette,
     name: "Cartoon & Comic",
     desc: "Disney Pixar, Manga, Lego, Simpsons, Pop Art, Sticker styles and more.",
+  },
+  {
+    icon: Layers,
+    name: "Carousel Maker",
+    desc: "Multi-slide Instagram carousels — quotes, tips lists, before/after posts.",
   },
 ];
 

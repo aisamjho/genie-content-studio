@@ -1,12 +1,16 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
-import { Upload, Download, RotateCcw, Sun, Contrast, Droplet, Palette, Sparkles, RefreshCw, Zap, Image as ImageIcon, Crop, FlipHorizontal, Type } from "lucide-react";
+import { Upload, Download, RotateCcw, Sun, Contrast, Droplet, Palette, Sparkles, RefreshCw, Zap, Image as ImageIcon, FlipHorizontal, Type, Film, Wand2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/studios/photo")({
   head: () => ({ meta: [{ title: "Photo Editor — Geenie AI Studio" }] }),
   component: PhotoEditor,
 });
 
+// Standard filters + 2026's dominant "cinematic color grade" presets
+// (teal & orange blockbuster look, moody midnight grade, golden-hour glow,
+// faded VHS/disposable-camera look) — these are the specific looks young
+// creators are leaning into this year per current trend research.
 const filters = [
   { name: "Original", css: "" },
   { name: "B&W", css: "grayscale(1)" },
@@ -20,6 +24,10 @@ const filters = [
   { name: "Chrome", css: "contrast(1.2) brightness(1.1) saturate(0.8) hue-rotate(5deg)" },
   { name: "Neon", css: "saturate(2) contrast(1.3) brightness(0.9) hue-rotate(30deg)" },
   { name: "Lomo", css: "contrast(1.3) saturate(1.4) sepia(0.2) brightness(0.9)" },
+  { name: "Teal & Orange", css: "contrast(1.2) saturate(1.35) hue-rotate(-6deg) brightness(1.02)" },
+  { name: "Midnight", css: "contrast(1.3) brightness(0.82) saturate(0.75) hue-rotate(190deg)" },
+  { name: "Golden Hour", css: "brightness(1.12) saturate(1.25) sepia(0.18) hue-rotate(-8deg)" },
+  { name: "VHS Retro", css: "contrast(0.85) saturate(0.85) brightness(1.05) sepia(0.15) hue-rotate(340deg)" },
 ];
 
 const bgs = [
@@ -33,11 +41,143 @@ const bgs = [
   { name: "Navy", value: "linear-gradient(135deg,#0f0c29,#302b63)" },
 ];
 
-const TABS = ["Edit", "Enhance", "Smart Edit", "AI Generate", "Background"] as const;
+const LIGHT_LEAK_POS: Record<string, { x: string; y: string }> = {
+  "top-left": { x: "15%", y: "15%" },
+  "top-right": { x: "85%", y: "15%" },
+  "bottom-left": { x: "15%", y: "85%" },
+  "bottom-right": { x: "85%", y: "85%" },
+};
+type LeakCorner = keyof typeof LIGHT_LEAK_POS;
+
+const TABS = ["Edit", "Enhance", "Cinematic", "Smart Edit", "AI Generate", "Background"] as const;
 type Tab = typeof TABS[number];
 
 const PROMPTS = ["Make it brighter and vivid","Cinematic dramatic look","Vintage warm film","Black and white high contrast","Soft dreamy pastel","Cool blue tone","Professional clean look","Make skin tones warmer","HDR effect","Moody dark contrast"];
 const AI_PRESETS = ["Professional LinkedIn headshot","Product photo on white background","YouTube thumbnail dramatic","Instagram aesthetic café","Wedding portrait soft light","Real estate interior bright"];
+
+/** Generates a fully opaque grayscale noise canvas — used both as a live CSS
+ *  preview texture (via toDataURL) and re-generated fresh at export time so
+ *  film grain in the downloaded image looks organic rather than tiled. */
+function makeNoiseCanvas(w: number, h: number): HTMLCanvasElement {
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const ctx = c.getContext("2d")!;
+  const imgData = ctx.createImageData(w, h);
+  const buf = imgData.data;
+  for (let i = 0; i < buf.length; i += 4) {
+    const v = Math.random() * 255;
+    buf[i] = v; buf[i + 1] = v; buf[i + 2] = v; buf[i + 3] = 255;
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return c;
+}
+
+/** True per-pixel RGB channel split — shifts the red channel one way and the
+ *  blue channel the other, leaving green centered. This is the real
+ *  chromatic-aberration / "glitch" look, baked directly into the canvas
+ *  pixels so it survives into the downloaded file (unlike a CSS-only
+ *  approximation, which only affects the on-screen preview). */
+function applyChromaticAberration(ctx: CanvasRenderingContext2D, w: number, h: number, amount: number) {
+  if (amount <= 0) return;
+  const src = ctx.getImageData(0, 0, w, h).data;
+  const out = new Uint8ClampedArray(src.length);
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    for (let x = 0; x < w; x++) {
+      const idx = (row + x) * 4;
+      const rx = Math.min(w - 1, x + amount);
+      const bx = Math.max(0, x - amount);
+      const rIdx = (row + rx) * 4;
+      const bIdx = (row + bx) * 4;
+      out[idx] = src[rIdx];
+      out[idx + 1] = src[idx + 1];
+      out[idx + 2] = src[bIdx + 2];
+      out[idx + 3] = src[idx + 3];
+    }
+  }
+  ctx.putImageData(new ImageData(out, w, h), 0, 0);
+}
+
+function drawVignette(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  const grad = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.32, w / 2, h / 2, Math.max(w, h) * 0.72);
+  grad.addColorStop(0, "rgba(0,0,0,0)");
+  grad.addColorStop(1, "rgba(0,0,0,0.55)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+}
+
+function drawLightLeak(ctx: CanvasRenderingContext2D, w: number, h: number, corner: LeakCorner) {
+  const pos = LIGHT_LEAK_POS[corner] ?? LIGHT_LEAK_POS["bottom-right"];
+  const cx = (parseFloat(pos.x) / 100) * w;
+  const cy = (parseFloat(pos.y) / 100) * h;
+  const r = Math.max(w, h) * 0.55;
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  grad.addColorStop(0, "rgba(255,175,90,0.55)");
+  grad.addColorStop(0.4, "rgba(255,105,140,0.28)");
+  grad.addColorStop(1, "rgba(255,105,140,0)");
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+  ctx.restore();
+}
+
+function drawFilmGrain(ctx: CanvasRenderingContext2D, w: number, h: number, intensity: number) {
+  if (intensity <= 0) return;
+  const noise = makeNoiseCanvas(w, h);
+  ctx.save();
+  ctx.globalAlpha = (intensity / 100) * 0.5;
+  ctx.globalCompositeOperation = "overlay";
+  ctx.drawImage(noise, 0, 0, w, h);
+  ctx.restore();
+}
+
+function drawCinematicBars(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  const barHeight = h * 0.09;
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(0, 0, w, barHeight);
+  ctx.fillRect(0, h - barHeight, w, barHeight);
+}
+
+/** Shared live-preview overlay stack — vignette, cinematic bars, film grain,
+ *  and light leak rendered as lightweight CSS layers so the preview matches
+ *  what download() bakes into the real file. Defined as a top-level
+ *  component (not nested inside PhotoEditor) so React can diff and update
+ *  it normally across re-renders instead of remounting it every time any
+ *  slider or text field changes. */
+function CinematicOverlayLayer({ vignette, lightLeak, leakCorner, filmGrain, noiseTileUrl, grainIntensity, cinematicBars }: {
+  vignette: boolean;
+  lightLeak: boolean;
+  leakCorner: LeakCorner;
+  filmGrain: boolean;
+  noiseTileUrl: string | null;
+  grainIntensity: number;
+  cinematicBars: boolean;
+}) {
+  return (
+    <>
+      {vignette && <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 80px rgba(0,0,0,0.6)" }} />}
+      {lightLeak && (
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: `radial-gradient(circle at ${LIGHT_LEAK_POS[leakCorner].x} ${LIGHT_LEAK_POS[leakCorner].y}, rgba(255,175,90,0.55), rgba(255,105,140,0.22) 40%, transparent 70%)`,
+          mixBlendMode: "screen",
+        }} />
+      )}
+      {filmGrain && noiseTileUrl && (
+        <div className="absolute inset-0 pointer-events-none rounded-[inherit]" style={{
+          backgroundImage: `url(${noiseTileUrl})`, backgroundSize: "180px 180px", backgroundRepeat: "repeat",
+          opacity: (grainIntensity / 100) * 0.5, mixBlendMode: "overlay",
+        }} />
+      )}
+      {cinematicBars && (
+        <>
+          <div className="absolute top-0 left-0 right-0 bg-black pointer-events-none" style={{ height: "9%" }} />
+          <div className="absolute bottom-0 left-0 right-0 bg-black pointer-events-none" style={{ height: "9%" }} />
+        </>
+      )}
+    </>
+  );
+}
 
 function PhotoEditor() {
   const navigate = useNavigate();
@@ -46,7 +186,6 @@ function PhotoEditor() {
   const [contrast, setContrast] = useState(100);
   const [saturation, setSaturation] = useState(100);
   const [blur, setBlur] = useState(0);
-  const [sharpness, setSharpness] = useState(0);
   const [warmth, setWarmth] = useState(0);
   const [vignette, setVignette] = useState(false);
   const [flipH, setFlipH] = useState(false);
@@ -57,6 +196,7 @@ function PhotoEditor() {
   const [aiBgPrompt, setAiBgPrompt] = useState("");
   const [aiBgLoading, setAiBgLoading] = useState(false);
   const [aiBgUrl, setAiBgUrl] = useState<string | null>(null);
+  const [aiBgError, setAiBgError] = useState<string | null>(null);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<string | null>(null);
@@ -70,16 +210,40 @@ function PhotoEditor() {
   const [textX, setTextX] = useState(50);
   const [textY, setTextY] = useState(85);
   const [textBg, setTextBg] = useState(false);
+  // Cinematic effects — trending "movie-look" toggles (see makeNoiseCanvas /
+  // applyChromaticAberration / drawLightLeak / drawCinematicBars above for
+  // how each one is actually baked into the exported file, not just shown
+  // in preview).
+  const [cinematicBars, setCinematicBars] = useState(false);
+  const [filmGrain, setFilmGrain] = useState(false);
+  const [grainIntensity, setGrainIntensity] = useState(40);
+  const [lightLeak, setLightLeak] = useState(false);
+  const [leakCorner, setLeakCorner] = useState<LeakCorner>("bottom-right");
+  const [chromaticAb, setChromaticAb] = useState(false);
+  const [chromaticAmount, setChromaticAmount] = useState(4);
   const [plan, setPlan] = useState("starter");
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [noiseTileUrl, setNoiseTileUrl] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const aiRequestIdRef = useRef(0);
+  const aiBgRequestIdRef = useRef(0);
 
   useEffect(() => { setPlan(typeof window !== "undefined" ? (localStorage.getItem("geenie_plan") || "starter") : "starter"); }, []);
+  // Generate a small reusable noise tile once, client-side only, for the
+  // live grain preview (the actual download regenerates full-resolution
+  // grain fresh — see drawFilmGrain).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const tile = makeNoiseCanvas(180, 180);
+    setNoiseTileUrl(tile.toDataURL());
+  }, []);
 
   const isPaid = plan === "creator" || plan === "studio";
-  const warmthFilter = warmth !== 0 ? `hue-rotate(${warmth < 0 ? warmth : 0}deg) sepia(${warmth > 0 ? warmth / 100 * 0.4 : 0})` : "";
+  const warmthFilter = warmth !== 0 ? `hue-rotate(${warmth < 0 ? warmth : 0}deg) sepia(${warmth > 0 ? (warmth / 100) * 0.4 : 0})` : "";
   const filterStyle = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px) ${activeFilter.css} ${warmthFilter}`;
   const transformStyle = `rotate(${rotation}deg) scaleX(${flipH ? -1 : 1})`;
+  const hasCinematicFx = cinematicBars || filmGrain || lightLeak || chromaticAb;
 
   function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -91,44 +255,68 @@ function PhotoEditor() {
 
   function reset() {
     setBrightness(100); setContrast(100); setSaturation(100);
-    setBlur(0); setSharpness(0); setWarmth(0);
+    setBlur(0); setWarmth(0);
     setVignette(false); setFlipH(false);
     setActiveFilter(filters[0]); setRotation(0); setTextOverlay("");
+    setCinematicBars(false); setFilmGrain(false); setLightLeak(false); setChromaticAb(false);
   }
 
   async function generateAI() {
     if (!aiPrompt.trim()) return;
+    const myId = ++aiRequestIdRef.current;
     setAiLoading(true); setAiResult(null); setAiError(false);
     const seed = Math.floor(Math.random() * 999999);
-    // Try with enhance first, fallback without
     const prompt = encodeURIComponent(aiPrompt + ", high quality, 4k, detailed");
     const url = `https://image.pollinations.ai/prompt/${prompt}?width=1024&height=1024&seed=${seed}&nologo=true`;
     const img = new window.Image();
     img.crossOrigin = "anonymous";
-    img.onload = () => { setAiResult(url); setAiLoading(false); };
+    img.onload = () => {
+      if (aiRequestIdRef.current !== myId) return;
+      setAiResult(url); setAiLoading(false);
+    };
     img.onerror = () => {
-      // Retry with smaller size
+      if (aiRequestIdRef.current !== myId) return;
       const url2 = `https://image.pollinations.ai/prompt/${prompt}?width=512&height=512&seed=${seed + 1}&nologo=true`;
       const img2 = new window.Image();
-      img2.onload = () => { setAiResult(url2); setAiLoading(false); };
-      img2.onerror = () => { setAiLoading(false); setAiError(true); };
+      img2.onload = () => {
+        if (aiRequestIdRef.current !== myId) return;
+        setAiResult(url2); setAiLoading(false);
+      };
+      img2.onerror = () => {
+        if (aiRequestIdRef.current !== myId) return;
+        setAiLoading(false); setAiError(true);
+      };
       img2.src = url2;
     };
     img.src = url;
-    setTimeout(() => { if (aiLoading) setAiLoading(false); }, 30000);
+    setTimeout(() => {
+      if (aiRequestIdRef.current !== myId) return;
+      setAiLoading(false); setAiError(true);
+    }, 30000);
   }
 
   function generateAIBg() {
     if (!aiBgPrompt.trim()) return;
-    setAiBgLoading(true); setAiBgUrl(null);
+    const myId = ++aiBgRequestIdRef.current;
+    setAiBgLoading(true); setAiBgUrl(null); setAiBgError(null);
     const seed = Math.floor(Math.random() * 99999);
     const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(aiBgPrompt + ", background scenery, wide angle, no people, high quality")}?width=1024&height=1024&seed=${seed}&nologo=true`;
-    setAiBgUrl(url);
     const img = new window.Image();
-    img.onload = () => setAiBgLoading(false);
-    img.onerror = () => setAiBgLoading(false);
+    img.onload = () => {
+      if (aiBgRequestIdRef.current !== myId) return;
+      setAiBgUrl(url); setAiBgLoading(false);
+    };
+    img.onerror = () => {
+      if (aiBgRequestIdRef.current !== myId) return;
+      setAiBgLoading(false);
+      setAiBgError("Background generation failed. Please try again.");
+    };
     img.src = url;
-    setTimeout(() => setAiBgLoading(false), 25000);
+    setTimeout(() => {
+      if (aiBgRequestIdRef.current !== myId) return;
+      setAiBgLoading(false);
+      setAiBgError("This is taking longer than expected. Please try again.");
+    }, 25000);
   }
 
   async function applySmartEdit() {
@@ -156,53 +344,84 @@ function PhotoEditor() {
     setSmartLoading(false);
   }
 
+  /**
+   * Renders the final image to canvas and downloads it. This is the single
+   * source of truth for what gets exported — every toggle below (vignette,
+   * cinematic bars, grain, light leak, chromatic aberration, text overlay)
+   * is baked directly into the canvas pixels here, in the same order the
+   * live preview approximates, so what you see is what you actually get.
+   */
   function download() {
     const src = tab === "AI Generate" ? aiResult : imageSrc;
     if (!src) return;
+    setDownloadError(null);
     const img = new window.Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
-      const canvas = canvasRef.current!;
-      const ctx = canvas.getContext("2d")!;
-      const r = rotation % 180 !== 0;
-      canvas.width = r ? img.height : img.width;
-      canvas.height = r ? img.width : img.height;
-      ctx.save();
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate((rotation * Math.PI) / 180);
-      if (flipH) ctx.scale(-1, 1);
-      if (tab !== "AI Generate") ctx.filter = filterStyle;
-      ctx.drawImage(img, -img.width / 2, -img.height / 2);
-      ctx.restore();
-      // Text overlay
-      if (textOverlay) {
-        const tx = (textX / 100) * canvas.width;
-        const ty = (textY / 100) * canvas.height;
-        ctx.font = `bold ${textSize}px sans-serif`;
-        ctx.textAlign = "center";
-        if (textBg) {
-          const metrics = ctx.measureText(textOverlay);
-          ctx.fillStyle = "rgba(0,0,0,0.5)";
-          ctx.fillRect(tx - metrics.width/2 - 8, ty - textSize, metrics.width + 16, textSize + 8);
+      try {
+        const canvas = canvasRef.current;
+        if (!canvas) throw new Error("Canvas not available");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("Canvas context unavailable");
+        const isAI = tab === "AI Generate";
+        const r = rotation % 180 !== 0;
+        canvas.width = r ? img.height : img.width;
+        canvas.height = r ? img.width : img.height;
+
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((rotation * Math.PI) / 180);
+        if (flipH) ctx.scale(-1, 1);
+        if (!isAI) ctx.filter = filterStyle;
+        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+        ctx.restore();
+
+        if (!isAI) {
+          if (chromaticAb) applyChromaticAberration(ctx, canvas.width, canvas.height, chromaticAmount);
+          if (vignette) drawVignette(ctx, canvas.width, canvas.height);
+          if (lightLeak) drawLightLeak(ctx, canvas.width, canvas.height, leakCorner);
+          if (filmGrain) drawFilmGrain(ctx, canvas.width, canvas.height, grainIntensity);
         }
-        ctx.fillStyle = textColor;
-        ctx.strokeStyle = "rgba(0,0,0,0.6)";
-        ctx.lineWidth = 2;
-        ctx.strokeText(textOverlay, tx, ty);
-        ctx.fillText(textOverlay, tx, ty);
+
+        if (textOverlay) {
+          const tx = (textX / 100) * canvas.width;
+          const ty = (textY / 100) * canvas.height;
+          ctx.font = `bold ${textSize}px sans-serif`;
+          ctx.textAlign = "center";
+          if (textBg) {
+            const metrics = ctx.measureText(textOverlay);
+            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            ctx.fillRect(tx - metrics.width / 2 - 8, ty - textSize, metrics.width + 16, textSize + 8);
+          }
+          ctx.fillStyle = textColor;
+          ctx.strokeStyle = "rgba(0,0,0,0.6)";
+          ctx.lineWidth = 2;
+          ctx.strokeText(textOverlay, tx, ty);
+          ctx.fillText(textOverlay, tx, ty);
+        }
+
+        if (!isAI && cinematicBars) drawCinematicBars(ctx, canvas.width, canvas.height);
+
+        if (!isPaid && !isAI) {
+          ctx.font = `bold ${Math.max(14, canvas.width / 40)}px sans-serif`;
+          ctx.fillStyle = "rgba(255,255,255,0.6)";
+          ctx.textAlign = "left";
+          ctx.fillText("Made with Geenie AI", 12, canvas.height - 12);
+        }
+
+        const dataUrl = canvas.toDataURL("image/png");
+        const a = document.createElement("a");
+        a.download = "geenie-photo.png";
+        a.href = dataUrl;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch {
+        setDownloadError("Couldn't bake in edits for download. Opening the image in a new tab instead — long-press or right-click to save it.");
+        window.open(src, "_blank");
       }
-      // Watermark for free
-      if (!isPaid && tab !== "AI Generate") {
-        ctx.font = `bold ${Math.max(14, canvas.width / 40)}px sans-serif`;
-        ctx.fillStyle = "rgba(255,255,255,0.6)";
-        ctx.textAlign = "left";
-        ctx.fillText("Made with Geenie AI", 12, canvas.height - 12);
-      }
-      const a = document.createElement("a");
-      a.download = "geenie-photo.png";
-      a.href = canvas.toDataURL("image/png");
-      a.click();
     };
+    img.onerror = () => setDownloadError("Couldn't load the image for download. Please try again.");
     img.src = src;
   }
 
@@ -222,19 +441,26 @@ function PhotoEditor() {
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={grad}><ImageIcon className="h-5 w-5 text-white" /></div>
         <div>
           <h1 className="text-xl font-semibold">Photo Editor</h1>
-          <p className="text-sm text-muted-foreground">Edit · Enhance · Smart AI · Generate · Background</p>
+          <p className="text-sm text-muted-foreground">Edit · Enhance · Cinematic · Smart AI · Generate · Background</p>
         </div>
       </div>
 
-      <div className="flex rounded-xl bg-surface border border-border overflow-hidden">
+      <div className="flex rounded-xl bg-surface border border-border overflow-hidden overflow-x-auto">
         {TABS.map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={`flex-1 py-2 text-[11px] sm:text-xs font-medium transition ${tab === t ? "text-white" : "text-muted-foreground hover:text-foreground"}`}
+            className={`flex-1 py-2 text-[10px] sm:text-xs font-medium transition whitespace-nowrap px-1.5 ${tab === t ? "text-white" : "text-muted-foreground hover:text-foreground"}`}
             style={tab === t ? grad : undefined}>{t}</button>
         ))}
       </div>
 
-      {(tab === "Edit" || tab === "Enhance" || tab === "Smart Edit" || tab === "Background") && !imageSrc && (
+      {downloadError && (
+        <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+          <span className="text-red-500 shrink-0">⚠️</span>
+          <p className="text-xs text-red-600">{downloadError}</p>
+        </div>
+      )}
+
+      {(tab === "Edit" || tab === "Enhance" || tab === "Cinematic" || tab === "Smart Edit" || tab === "Background") && !imageSrc && (
         <button onClick={() => fileRef.current?.click()}
           className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border bg-surface/50 py-20 hover:border-orange-500/50 transition">
           <div className="flex h-14 w-14 items-center justify-center rounded-full" style={grad}><Upload className="h-6 w-6 text-white" /></div>
@@ -257,8 +483,15 @@ function PhotoEditor() {
                   </p>
                 </div>
               )}
-              {vignette && <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: "inset 0 0 80px rgba(0,0,0,0.6)" }} />}
+              <CinematicOverlayLayer
+                vignette={vignette} lightLeak={lightLeak} leakCorner={leakCorner}
+                filmGrain={filmGrain} noiseTileUrl={noiseTileUrl} grainIntensity={grainIntensity}
+                cinematicBars={cinematicBars}
+              />
             </div>
+            {hasCinematicFx && (
+              <p className="text-[11px] text-center text-orange-600 bg-orange-50 rounded-lg py-1.5">🎬 Cinematic effects active — edit them in the Cinematic tab</p>
+            )}
             <div className="flex gap-2 flex-wrap">
               <button onClick={() => fileRef.current?.click()} className={`flex items-center gap-1.5 px-3 py-2 ${surfaceBtn}`}><RefreshCw className="h-4 w-4" />New</button>
               <button onClick={() => setRotation(r => (r + 90) % 360)} className={`flex items-center gap-1.5 px-3 py-2 ${surfaceBtn}`}><RotateCcw className="h-4 w-4" />Rotate</button>
@@ -318,7 +551,14 @@ function PhotoEditor() {
       {tab === "Enhance" && imageSrc && (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-4">
           <div className="flex flex-col gap-3">
-            <div className="rounded-2xl overflow-hidden bg-black/10 flex items-center justify-center min-h-[280px]">{previewImg}</div>
+            <div className="rounded-2xl overflow-hidden bg-black/10 flex items-center justify-center min-h-[280px] relative">
+              {previewImg}
+              <CinematicOverlayLayer
+                vignette={vignette} lightLeak={lightLeak} leakCorner={leakCorner}
+                filmGrain={filmGrain} noiseTileUrl={noiseTileUrl} grainIntensity={grainIntensity}
+                cinematicBars={cinematicBars}
+              />
+            </div>
             <button onClick={download} className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white" style={grad}><Download className="h-4 w-4" />{isPaid ? "Download HD" : "Download (watermarked)"}</button>
           </div>
           <div className="glass rounded-2xl p-4 flex flex-col gap-4">
@@ -344,12 +584,99 @@ function PhotoEditor() {
         </div>
       )}
 
+      {/* CINEMATIC TAB — trending "movie look" effects for 2026: film grain,
+          letterbox bars, light leaks, and RGB-split glitch. Research shows
+          these are exactly what young creators are using right now to get
+          an "anti-perfect", nostalgic, movie-frame aesthetic. */}
+      {tab === "Cinematic" && imageSrc && (
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
+          <div className="flex flex-col gap-3">
+            <div className="rounded-2xl overflow-hidden bg-black/10 flex items-center justify-center min-h-[280px] relative">
+              {chromaticAb ? (
+                <div className="relative" style={{ transform: transformStyle }}>
+                  <img src={imageSrc} alt="rgb-red" style={{ filter: `${filterStyle} sepia(1) saturate(6) hue-rotate(-50deg) brightness(1.15)`, maxHeight: "480px" }}
+                    className="absolute inset-0 max-w-full object-contain" style={{ mixBlendMode: "screen", transform: `translateX(-${chromaticAmount}px)`, maxHeight: "480px" }} />
+                  <img src={imageSrc} alt="rgb-cyan" style={{ filter: `${filterStyle} sepia(1) saturate(6) hue-rotate(140deg) brightness(1.15)`, maxHeight: "480px" }}
+                    className="absolute inset-0 max-w-full object-contain" style={{ mixBlendMode: "screen", transform: `translateX(${chromaticAmount}px)`, maxHeight: "480px" }} />
+                  <img src={imageSrc} alt="rgb-base" style={{ filter: filterStyle, maxHeight: "480px" }} className="relative max-w-full object-contain opacity-90" />
+                </div>
+              ) : previewImg}
+              <CinematicOverlayLayer
+                vignette={vignette} lightLeak={lightLeak} leakCorner={leakCorner}
+                filmGrain={filmGrain} noiseTileUrl={noiseTileUrl} grainIntensity={grainIntensity}
+                cinematicBars={cinematicBars}
+              />
+            </div>
+            <button onClick={download} className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white" style={grad}><Download className="h-4 w-4" />{isPaid ? "Download HD" : "Download (watermarked)"}</button>
+          </div>
+          <div className="glass rounded-2xl p-4 flex flex-col gap-4">
+            <p className="text-sm font-semibold flex items-center gap-1.5"><Film className="h-4 w-4 text-orange-500" />Cinematic Effects</p>
+
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={cinematicBars} onChange={e => setCinematicBars(e.target.checked)} className="accent-orange-500" />
+                <span className="text-xs">🎞️ Cinematic Bars</span>
+              </label>
+            </div>
+            <p className="text-[11px] text-muted-foreground -mt-2">Widescreen letterbox — instant movie-frame look</p>
+
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer mb-1.5">
+                <input type="checkbox" checked={filmGrain} onChange={e => setFilmGrain(e.target.checked)} className="accent-orange-500" />
+                <span className="text-xs">🎬 Film Grain</span>
+              </label>
+              {filmGrain && (
+                <input type="range" min={10} max={100} value={grainIntensity} onChange={e => setGrainIntensity(Number(e.target.value))} className="w-full accent-orange-500" />
+              )}
+              <p className="text-[11px] text-muted-foreground">Analog texture — the "imperfect on purpose" look</p>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer mb-1.5">
+                <input type="checkbox" checked={lightLeak} onChange={e => setLightLeak(e.target.checked)} className="accent-orange-500" />
+                <span className="text-xs">☀️ Light Leak</span>
+              </label>
+              {lightLeak && (
+                <div className="grid grid-cols-4 gap-1.5">
+                  {(Object.keys(LIGHT_LEAK_POS) as LeakCorner[]).map(c => (
+                    <button key={c} onClick={() => setLeakCorner(c)}
+                      className={`rounded-lg py-1.5 text-[10px] font-medium transition ${leakCorner === c ? "text-white" : "bg-surface border border-border text-muted-foreground"}`}
+                      style={leakCorner === c ? grad : undefined}>
+                      {c.split("-").map(w => w[0].toUpperCase()).join("")}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer mb-1.5">
+                <input type="checkbox" checked={chromaticAb} onChange={e => setChromaticAb(e.target.checked)} className="accent-orange-500" />
+                <span className="text-xs flex items-center gap-1"><Wand2 className="h-3 w-3" />Glitch / RGB Split</span>
+              </label>
+              {chromaticAb && (
+                <input type="range" min={1} max={12} value={chromaticAmount} onChange={e => setChromaticAmount(Number(e.target.value))} className="w-full accent-orange-500" />
+              )}
+              <p className="text-[11px] text-muted-foreground">Retro VHS-glitch color split</p>
+            </div>
+
+            <p className="text-[11px] text-muted-foreground mt-1">💡 Try "Teal & Orange" or "Midnight" filters in the Edit tab combined with these for a full blockbuster grade.</p>
+            <button onClick={reset} className={`flex items-center justify-center gap-2 px-4 py-2 text-xs ${surfaceBtn}`}><RotateCcw className="h-3.5 w-3.5" />Reset All</button>
+          </div>
+        </div>
+      )}
+
       {/* SMART EDIT TAB */}
       {tab === "Smart Edit" && imageSrc && (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
           <div className="flex flex-col gap-3">
-            <div className="rounded-2xl overflow-hidden bg-black/10 flex items-center justify-center min-h-[280px]">
+            <div className="rounded-2xl overflow-hidden bg-black/10 flex items-center justify-center min-h-[280px] relative">
               <img src={imageSrc} alt="smart" style={{ filter: filterStyle, transform: transformStyle, maxHeight: "480px" }} className="max-w-full object-contain transition-all duration-300" />
+              <CinematicOverlayLayer
+                vignette={vignette} lightLeak={lightLeak} leakCorner={leakCorner}
+                filmGrain={filmGrain} noiseTileUrl={noiseTileUrl} grainIntensity={grainIntensity}
+                cinematicBars={cinematicBars}
+              />
             </div>
             <button onClick={download} className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white" style={grad}><Download className="h-4 w-4" />{isPaid ? "Download HD" : "Download (watermarked)"}</button>
           </div>
@@ -419,6 +746,7 @@ function PhotoEditor() {
                 <button key={p} onClick={() => setAiBgPrompt(p)} className="rounded-full bg-white border border-orange-200 px-2.5 py-1 text-[11px] text-orange-600 hover:bg-orange-50 transition">{p}</button>
               ))}
             </div>
+            {aiBgError && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">⚠️ {aiBgError}</p>}
           </div>
           <div className="rounded-2xl overflow-hidden flex items-center justify-center min-h-[240px] relative" style={{ background: aiBgUrl ? undefined : (bg.value || "#f5f5f7") }}>
             {aiBgUrl && <img src={aiBgUrl} className="absolute inset-0 w-full h-full object-cover rounded-2xl" alt="ai bg" />}
