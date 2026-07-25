@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
+import { motion } from "motion/react";
 import { Download, Sparkles, RefreshCw, AlertCircle, Dice5 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/studios/anime")({
@@ -194,7 +195,9 @@ function AnimeStudio() {
             {loading
               ? <><div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" /><span className="text-xs text-muted-foreground">Generating anime art... (15-25s)</span></>
               : resultUrl
-                ? <img src={resultUrl} className="w-full object-contain rounded-xl max-h-[360px]" alt="anime result" onError={() => setError("Generation failed. Try again.")} />
+                ? <motion.img key={resultUrl} src={resultUrl}
+                    initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.35, ease: "easeOut" }}
+                    className="w-full object-contain rounded-xl max-h-[360px]" alt="anime result" onError={() => setError("Generation failed. Try again.")} />
                 : null}
           </div>
         )}
@@ -211,19 +214,19 @@ function AnimeStudio() {
 
         {/* Actions */}
         <div className="flex gap-3">
-          <button onClick={() => convert()} disabled={loading || (!isPaid && usedCount >= 5)}
+          <motion.button whileTap={{ scale: 0.97 }} onClick={() => convert()} disabled={loading || (!isPaid && usedCount >= 5)}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white disabled:opacity-40 transition"
             style={grad}>
             <Sparkles className="h-4 w-4" />{loading ? "Generating..." : "Generate Anime Art"}
-          </button>
+          </motion.button>
           {resultUrl && !loading && (
             <>
-              <button onClick={() => convert()} className="flex items-center gap-2 rounded-xl bg-surface border border-border px-4 py-3 text-sm font-medium hover:bg-surface-elevated transition">
+              <motion.button whileTap={{ scale: 0.94 }} onClick={() => convert()} className="flex items-center gap-2 rounded-xl bg-surface border border-border px-4 py-3 text-sm font-medium hover:bg-surface-elevated transition">
                 <RefreshCw className="h-4 w-4" />
-              </button>
-              <button onClick={download} className="flex items-center gap-2 rounded-xl bg-surface border border-border px-4 py-3 text-sm font-medium hover:bg-surface-elevated transition">
+              </motion.button>
+              <motion.button whileTap={{ scale: 0.94 }} onClick={download} className="flex items-center gap-2 rounded-xl bg-surface border border-border px-4 py-3 text-sm font-medium hover:bg-surface-elevated transition">
                 <Download className="h-4 w-4" />
-              </button>
+              </motion.button>
             </>
           )}
         </div>

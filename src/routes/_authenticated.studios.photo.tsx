@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
+import { motion } from "motion/react";
 import { Upload, Download, RotateCcw, Sun, Contrast, Droplet, Palette, Sparkles, RefreshCw, Zap, Image as ImageIcon, FlipHorizontal, Type, Film, Wand2, X, Bookmark } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/studios/photo")({
@@ -848,7 +849,9 @@ function PhotoEditor() {
           {aiError && !aiLoading && <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3"><p className="text-xs text-red-600">⚠️ Generation failed. Pollinations AI may be busy. Please try again in a few seconds.</p></div>}
           {aiResult && !aiLoading && (
             <div className="flex flex-col gap-3">
-              <img src={aiResult} alt="AI generated" className="w-full rounded-xl object-cover" />
+              <motion.img key={aiResult} src={aiResult} alt="AI generated"
+                initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.35, ease: "easeOut" }}
+                className="w-full rounded-xl object-cover" />
               <div className="flex gap-2">
                 <button onClick={generateAI} className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 ${surfaceBtn}`}><RefreshCw className="h-4 w-4" />Regenerate</button>
                 <button onClick={download} className="flex-1 flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white" style={grad}><Download className="h-4 w-4" />Download</button>

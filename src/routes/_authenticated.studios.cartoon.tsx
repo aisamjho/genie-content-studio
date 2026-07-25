@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef } from "react";
+import { motion } from "motion/react";
 import { Upload, Download, Sparkles, RefreshCw, Dice5 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/studios/cartoon")({
@@ -167,7 +168,9 @@ function CartoonStudio() {
                     <span className="text-xs text-muted-foreground">Creating {style.name} art... (15-25s)</span>
                   </div>
                 : result
-                  ? <img src={result} className="w-full object-contain rounded-xl" alt="cartoon" />
+                  ? <motion.img key={result} src={result}
+                      initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.35, ease: "easeOut" }}
+                      className="w-full object-contain rounded-xl" alt="cartoon" />
                   : <span className="text-xs text-muted-foreground p-4 text-center">Your cartoon art appears here after generating</span>}
             </div>
           </div>
@@ -177,18 +180,18 @@ function CartoonStudio() {
               <p className="text-xs text-orange-600 mt-1">Add a description below to personalise your art, or just click Generate.</p>
             </div>
             {error && <p className="text-xs text-red-600 bg-red-50 rounded-xl px-3 py-2">⚠️ {error}</p>}
-            <button onClick={() => generate()} disabled={loading}
+            <motion.button whileTap={{ scale: 0.97 }} onClick={() => generate()} disabled={loading}
               className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white disabled:opacity-50 transition" style={grad}>
               <Sparkles className="h-4 w-4" />{loading ? "Generating..." : `Create ${style.name} Art`}
-            </button>
+            </motion.button>
             {result && !loading && (
               <>
-                <button onClick={() => generate()} className="flex items-center justify-center gap-2 rounded-xl bg-surface border border-border px-4 py-2.5 text-sm font-medium hover:bg-surface-elevated transition">
+                <motion.button whileTap={{ scale: 0.97 }} onClick={() => generate()} className="flex items-center justify-center gap-2 rounded-xl bg-surface border border-border px-4 py-2.5 text-sm font-medium hover:bg-surface-elevated transition">
                   <RefreshCw className="h-4 w-4" />Try Again
-                </button>
-                <button onClick={download} className="flex items-center justify-center gap-2 rounded-xl bg-surface border border-border px-4 py-2.5 text-sm font-medium hover:bg-surface-elevated transition">
+                </motion.button>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={download} className="flex items-center justify-center gap-2 rounded-xl bg-surface border border-border px-4 py-2.5 text-sm font-medium hover:bg-surface-elevated transition">
                   <Download className="h-4 w-4" />Download
-                </button>
+                </motion.button>
               </>
             )}
           </div>
