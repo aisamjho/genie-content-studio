@@ -128,6 +128,16 @@ function CarouselStudio() {
   }
 
   function applyTemplate(t: typeof templates[0]) {
+    // Applying a template completely replaces every slide — if the user
+    // has already written real content, silently wiping it out with one
+    // misclick was a genuine data-loss risk. Only ask when there's
+    // something worth losing (a single still-blank default slide is fine
+    // to replace without asking).
+    const hasRealContent = slides.length > 1 || slides.some((s) => s.heading.trim() || s.body.trim());
+    if (hasRealContent) {
+      const ok = window.confirm(`"${t.name}" will replace all ${slides.length} current slide${slides.length > 1 ? "s" : ""}. Continue?`);
+      if (!ok) return;
+    }
     setSlides(t.slides.map((s) => newSlide(s)));
     setActive(0);
   }
@@ -296,20 +306,25 @@ function CarouselStudio() {
       </div>
 
       {/* Templates */}
-      <div className="flex gap-2 flex-wrap">
-        <span className="text-xs text-muted-foreground self-center mr-1">Quick start:</span>
-        {templates.map((t) => (
-          <button key={t.name} onClick={() => applyTemplate(t)}
-            className="rounded-full bg-surface border border-border px-3 py-1.5 text-xs font-medium hover:bg-surface-elevated transition flex items-center gap-1">
-            {t.name === "Quote" && <span className="text-[9px]" title="Trending">🔥</span>}
-            {t.name}
-          </button>
-        ))}
-        <div className="flex gap-1 ml-auto">
+      <div>
+        <p className="text-xs text-muted-foreground mb-1.5">Quick start (replaces current slides)</p>
+        <div className="flex gap-2 flex-wrap">
+          {templates.map((t) => (
+            <button key={t.name} onClick={() => applyTemplate(t)}
+              className="rounded-full bg-surface border border-border px-3 py-1.5 text-xs font-medium hover:bg-surface-elevated transition flex items-center gap-1">
+              {t.name === "Quote" && <span className="text-[9px]" title="Trending">🔥</span>}
+              {t.name}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <p className="text-xs text-muted-foreground mb-1.5">Format</p>
+        <div className="flex gap-1.5">
           {(["1:1", "4:5"] as const).map((r) => (
             <button key={r} onClick={() => setRatio(r)}
               className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${ratio === r ? "text-white" : "bg-surface border border-border text-muted-foreground"}`}
-              style={ratio === r ? grad : undefined}>{SIZES[r].label}</button>
+              style={ratio === r ? grad : undefined}>{SIZES[r].label} ({r})</button>
           ))}
         </div>
       </div>
@@ -342,16 +357,21 @@ function CarouselStudio() {
           <div className="flex items-center justify-center gap-2">
             <button onClick={() => setActive((a) => Math.max(0, a - 1))} disabled={active === 0}
               className="rounded-lg bg-surface border border-border p-1.5 disabled:opacity-30 hover:bg-surface-elevated transition"><ChevronLeft className="h-4 w-4" /></button>
-            <div className="flex gap-1.5 overflow-x-auto max-w-[220px] px-1">
+            <div className="flex gap-1.5 overflow-x-auto max-w-[240px] px-1">
               {slides.map((s, i) => (
-                <button key={s.id} onClick={() => setActive(i)}
-                  className={`h-2 w-2 rounded-full shrink-0 transition ${i === active ? "bg-orange-500 w-5" : "bg-border"}`} />
+                <button key={s.id} onClick={() => setActive(i)} title={s.heading || `Slide ${i + 1}`}
+                  className={`h-6 w-6 rounded-full shrink-0 text-[10px] font-semibold transition flex items-center justify-center ${i === active ? "text-white" : "bg-surface border border-border text-muted-foreground hover:bg-surface-elevated"}`}
+                  style={i === active ? grad : undefined}>
+                  {i + 1}
+                </button>
               ))}
             </div>
             <button onClick={() => setActive((a) => Math.min(slides.length - 1, a + 1))} disabled={active === slides.length - 1}
               className="rounded-lg bg-surface border border-border p-1.5 disabled:opacity-30 hover:bg-surface-elevated transition"><ChevronRight className="h-4 w-4" /></button>
+            <button onClick={addSlide} disabled={slides.length >= 10} title="Add slide"
+              className="rounded-lg p-1.5 text-white disabled:opacity-30 transition shrink-0" style={grad}><Plus className="h-4 w-4" /></button>
           </div>
-          <p className="text-xs text-center text-muted-foreground">Slide {active + 1} of {slides.length} · max 10</p>
+          <p className="text-xs text-center text-muted-foreground">Viewing slide {active + 1} of {slides.length} · tap a number to jump to it · max 10</p>
 
           {downloadError && (
             <div className="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-3 py-2.5">
@@ -376,12 +396,12 @@ function CarouselStudio() {
         {/* Editor panel */}
         <div className="glass rounded-2xl p-4 flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold">Slide {active + 1}</p>
+            <p className="text-sm font-semibold">Editing Slide {active + 1}</p>
             <div className="flex gap-1">
               <button onClick={() => moveSlide(-1)} disabled={active === 0} className="rounded-lg bg-surface border border-border p-1.5 disabled:opacity-30 hover:bg-surface-elevated transition" title="Move left"><ChevronLeft className="h-3.5 w-3.5" /></button>
               <button onClick={() => moveSlide(1)} disabled={active === slides.length - 1} className="rounded-lg bg-surface border border-border p-1.5 disabled:opacity-30 hover:bg-surface-elevated transition" title="Move right"><ChevronRight className="h-3.5 w-3.5" /></button>
-              <button onClick={duplicateSlide} disabled={slides.length >= 10} className="rounded-lg bg-surface border border-border p-1.5 disabled:opacity-30 hover:bg-surface-elevated transition" title="Duplicate"><Copy className="h-3.5 w-3.5" /></button>
-              <button onClick={() => removeSlide(active)} disabled={slides.length <= 1} className="rounded-lg bg-surface border border-border p-1.5 disabled:opacity-30 hover:bg-red-50 hover:text-red-500 transition" title="Delete"><Trash2 className="h-3.5 w-3.5" /></button>
+              <button onClick={duplicateSlide} disabled={slides.length >= 10} className="rounded-lg bg-surface border border-border p-1.5 disabled:opacity-30 hover:bg-surface-elevated transition" title="Duplicate this slide"><Copy className="h-3.5 w-3.5" /></button>
+              <button onClick={() => removeSlide(active)} disabled={slides.length <= 1} className="rounded-lg bg-surface border border-border p-1.5 disabled:opacity-30 hover:bg-red-50 hover:text-red-500 transition" title="Delete this slide"><Trash2 className="h-3.5 w-3.5" /></button>
             </div>
           </div>
 
@@ -435,6 +455,9 @@ function CarouselStudio() {
             </div>
             {aiLoading && <p className="text-[11px] text-muted-foreground mt-1.5">Generating... (15-20s)</p>}
             {aiBgError && <p className="text-[11px] text-red-600 bg-red-50 rounded-lg px-2 py-1.5 mt-1.5">⚠️ {aiBgError}</p>}
+            {(slide.bgType === "image" || slide.bgType === "ai") && slide.imageUrl && (
+              <p className="text-[11px] text-muted-foreground mt-1.5">A dark overlay is added automatically so your text stays readable on the photo.</p>
+            )}
           </div>
 
           <label className="flex items-center gap-2 cursor-pointer">
