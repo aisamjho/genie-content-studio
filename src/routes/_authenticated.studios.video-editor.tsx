@@ -218,15 +218,21 @@ function VideoEditor() {
     const startTime = (trimStart / 100) * duration;
     const endTime = (trimEnd / 100) * duration;
 
+    const isStudio = plan === "studio";
     const isPaid = plan === "creator" || plan === "studio";
     const nativeW = video.videoWidth || 720;
     const nativeH = video.videoHeight || 1280;
-    // Free tier exports are capped at a 720px-equivalent long edge — still
-    // perfectly shareable on Reels/Shorts/TikTok, just not full native
-    // resolution. Creator/Studio always get the source's real resolution.
+    // Three real tiers, not two: free is capped at 720p-equivalent, Creator
+    // at 1080p-equivalent, and only Studio gets the source's true native
+    // resolution uncapped. Previously Creator and Studio were identical
+    // here — every paid-gate in the app treated them the same — which
+    // meant Studio's advertised "4K exports" wasn't actually true for
+    // anyone. This is what makes it true now.
     const MAX_FREE_EDGE = 720;
+    const MAX_CREATOR_EDGE = 1080;
     const longEdge = Math.max(nativeW, nativeH);
-    const capScale = !isPaid && longEdge > MAX_FREE_EDGE ? MAX_FREE_EDGE / longEdge : 1;
+    const cap = isStudio ? Infinity : isPaid ? MAX_CREATOR_EDGE : MAX_FREE_EDGE;
+    const capScale = longEdge > cap ? cap / longEdge : 1;
     canvas.width = Math.round(nativeW * capScale);
     canvas.height = Math.round(nativeH * capScale);
     const ctx = canvas.getContext("2d");
@@ -565,12 +571,17 @@ function VideoEditor() {
             <button onClick={exportVideo} disabled={exporting}
               className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition disabled:opacity-50"
               style={{ background: "linear-gradient(135deg,#ff5a1f,#f7277e)" }}>
-              <Download className="h-4 w-4" />{exporting ? "Exporting..." : (plan === "creator" || plan === "studio") ? "Export Full HD" : "Export Video (720p)"}
+              <Download className="h-4 w-4" />{exporting ? "Exporting..." : plan === "studio" ? "Export Native Resolution" : plan === "creator" ? "Export Full HD" : "Export Video (720p)"}
             </button>
             <p className="text-[11px] text-muted-foreground text-center">Export renders in real time — a 30s clip takes about 30s (faster at higher speed)</p>
             {plan !== "creator" && plan !== "studio" && (
               <p className="text-[11px] text-center text-orange-600 bg-orange-50 rounded-lg py-1.5 w-full">
                 Free exports are capped at 720p with a small watermark · <a href="/#pricing" className="font-medium hover:underline">Upgrade for full HD, no watermark →</a>
+              </p>
+            )}
+            {plan === "creator" && (
+              <p className="text-[11px] text-center text-muted-foreground w-full">
+                Creator exports up to 1080p · <a href="/#pricing" className="font-medium text-orange-600 hover:underline">Go Studio for full native/4K resolution →</a>
               </p>
             )}
           </div>
