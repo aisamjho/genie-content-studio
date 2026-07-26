@@ -83,7 +83,8 @@ const plans = [
     features: [
       "✅ Photo Editor — full access",
       "✅ Video Editor — full access",
-      "⚡ Anime Style — 5 conversions only",
+      "⚡ Anime Style — 5 generations only",
+      "⚡ Cartoon & Comic — 5 generations only",
       "⚠️ Photo downloads have watermark",
       "⚠️ Video downloads are SD only",
     ],
@@ -97,9 +98,10 @@ const plans = [
     desc: "For creators who want more.",
     features: [
       "✅ Everything in Free",
-      "✅ Unlimited Anime conversions",
+      "✅ Unlimited Anime & Cartoon generations",
       "✅ No watermark on photos",
       "✅ HD video downloads",
+      "✅ Ask AI — describe an edit, AI applies it",
       "✅ Priority support",
     ],
     highlight: true,
@@ -125,7 +127,7 @@ const plans = [
 const faqs = [
   {
     q: "Is Geenie AI really free?",
-    a: "Yes. Photo Editor and Video Editor are 100% free with no watermark. Anime Style gives 5 free conversions. Upgrade to Creator ($2/mo) for unlimited anime conversions.",
+    a: "Yes, you can start for free. Photo and Video Editor are free with a small watermark and SD video, and Anime/Cartoon give 5 free generations each. Upgrade to Creator ($2/mo) to remove the watermark, get HD video, and unlimited generations.",
   },
   {
     q: "Do I need to install anything?",
@@ -137,7 +139,7 @@ const faqs = [
   },
   {
     q: "What is the Anime Style feature?",
-    a: "Upload any photo and convert it to anime art styles like Studio Ghibli, Naruto, Demon Slayer, Chibi and more. Perfect for profile pictures and Reel content.",
+    a: "Describe a character or scene and AI generates original anime art in styles like Studio Ghibli, Naruto, Demon Slayer, Chibi and more. It creates new art from your description — it doesn't convert an uploaded photo (true photo-to-anime conversion needs a paid model we haven't added yet).",
   },
   {
     q: "How does payment work?",
@@ -151,16 +153,16 @@ const faqs = [
 
 const roadmap = [
   {
-    tag: "Shipping",
-    items: ["Image Studio", "Content Studio", "Brand Kit"],
+    tag: "Live now",
+    items: ["Photo Editor", "Video Editor", "Anime Style", "Cartoon & Comic", "Carousel Maker"],
   },
   {
-    tag: "Beta",
-    items: ["Video Studio", "Reel Generator", "Voice Studio"],
+    tag: "Recently added",
+    items: ["Cinematic filters & effects", "Real video export with music", "4-language support"],
   },
   {
-    tag: "Soon",
-    items: ["Voice cloning", "AI avatars", "Mobile apps (iOS & Android)"],
+    tag: "Exploring",
+    items: ["True photo-to-anime conversion", "More languages", "Background removal"],
   },
 ];
 

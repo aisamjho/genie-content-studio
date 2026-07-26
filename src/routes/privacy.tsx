@@ -32,38 +32,33 @@ function PrivacyPage() {
 
           <Section title="2. Data we collect">
             <ul className="list-disc pl-5 space-y-1">
-              <li>Account information: email address and name when you sign up.</li>
-              <li>Profile data: full name and avatar URL stored in our database.</li>
-              <li>Usage data: generation history, credits used, feature interactions.</li>
-              <li>Media uploads: images and videos you upload for processing.</li>
-              <li>Device data: browser type, IP address, and access timestamps (server logs).</li>
+              <li>Account information: the name and email you enter when you sign up. This is stored in your browser only — we do not run a server-side database.</li>
+              <li>Usage data: your plan status and generation counters (e.g. free generations used), stored in your browser only.</li>
+              <li>Your photos and videos: processed entirely on your device. They are never uploaded to us or stored anywhere by us.</li>
+              <li>AI generation inputs: your typed prompts and edit instructions are sent to the third-party AI providers listed below to generate results. Your uploaded photo itself is not sent for Anime Style, Cartoon &amp; Comic, or Ask AI.</li>
             </ul>
           </Section>
 
           <Section title="3. How we use your data">
             <ul className="list-disc pl-5 space-y-1">
-              <li>To provide and improve the Geenie AI Studio service.</li>
-              <li>To process AI generation requests.</li>
-              <li>To manage subscriptions and billing.</li>
-              <li>To send transactional emails (sign-up confirmation, password reset).</li>
-              <li>To prevent fraud and enforce our Terms of Service.</li>
+              <li>To run Geenie AI Studio in your browser and remember your settings between visits.</li>
+              <li>To send your typed prompts and edit instructions to the AI providers listed below, so they can generate a result.</li>
+              <li>To process payments via Razorpay when you upgrade your plan.</li>
             </ul>
           </Section>
 
           <Section title="4. Data storage and security">
-            All data is stored via Supabase on secure, encrypted infrastructure. We apply
-            Row-Level Security (RLS) policies so each user can only access their own data.
-            Media files are stored encrypted at rest.
+            We do not operate a server-side database. Your account details, plan status, and saved presets are stored using your browser's local storage, on your own device — we have no server copy and no way to access them remotely. Clearing your browser data or uninstalling the app will remove this information. Your photos and videos are never uploaded to us; editing happens entirely in your browser.
           </Section>
 
           <Section title="5. Third-party services">
             We use the following third parties:
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>Supabase — authentication and database.</li>
+              <li>Pollinations AI — image generation for Anime Style, Cartoon &amp; Comic, AI Generate, and AI backgrounds. Only your text description is sent, never your uploaded photo.</li>
+              <li>Anthropic (Claude) — powers the Ask AI photo editing feature. Only your typed instruction and current edit settings are sent, never your uploaded photo.</li>
               <li>Razorpay — payment processing.</li>
-              <li>AI providers (OpenAI, Fal.ai, Replicate, etc.) — content generation.</li>
             </ul>
-            Each provider operates under their own privacy policy.
+            Each third-party provider operates under their own privacy policy.
           </Section>
 
           <Section title="6. Your rights (GDPR)">

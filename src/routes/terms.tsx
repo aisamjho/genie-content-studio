@@ -51,11 +51,11 @@ function TermsPage() {
             </ul>
           </Section>
 
-          <Section title="5. Credits and payments">
+          <Section title="5. Free limits and payments">
             <ul className="list-disc pl-5 space-y-1">
-              <li>Credits are consumed per generation and are non-refundable once used.</li>
-              <li>Subscription payments are billed monthly or annually as selected.</li>
-              <li>You may cancel your subscription at any time; access continues until period end.</li>
+              <li>Free plan generations (e.g. Anime Style, Cartoon &amp; Comic) are limited per feature and are not refundable or transferable once used.</li>
+              <li>Subscription payments are billed monthly.</li>
+              <li>You may cancel your subscription at any time; access continues until the current billing period ends.</li>
               <li>We reserve the right to change pricing with 30 days notice.</li>
             </ul>
           </Section>
@@ -83,7 +83,7 @@ function TermsPage() {
           <Section title="10. Refund policy">
             Subscription fees are non-refundable except where required by law. If you experience a
             technical issue that prevents use of the service, contact us within 7 days for a
-            review. Credits consumed are non-refundable.
+            review. Free plan generations consumed are non-refundable.
           </Section>
 
           <Section title="11. Termination">
