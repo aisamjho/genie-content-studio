@@ -1,7 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { motion } from "motion/react";
-import { Upload, Download, Sparkles, RefreshCw, Dice5 } from "lucide-react";
+import { Download, Sparkles, RefreshCw, Dice5, Film } from "lucide-react";
+
+/** Feature-detects whether this browser can record a canvas as video —
+ *  the same requirement Video Editor's real export relies on. */
+function isAnimateSupported() {
+  if (typeof window === "undefined") return false;
+  const c = document.createElement("canvas");
+  return typeof (c as any).captureStream === "function" && typeof window.MediaRecorder !== "undefined";
+}
 
 export const Route = createFileRoute("/_authenticated/studios/cartoon")({
   head: () => ({ meta: [{ title: "Cartoon & Comic Style — Geenie AI Studio" }] }),
@@ -45,8 +53,11 @@ function CartoonStudio() {
   const [error, setError] = useState<string | null>(null);
   const [plan, setPlan] = useState("starter");
   const [usedCount, setUsedCount] = useState(0);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [animating, setAnimating] = useState(false);
+  const [animateProgress, setAnimateProgress] = useState(0);
+  const [animateError, setAnimateError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
+  const animCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // This studio previously had zero paid gating at all — fully unlimited
   // for every user regardless of plan, while Anime Style capped free users
@@ -121,6 +132,97 @@ function CartoonStudio() {
     setStyle(randomStyle);
     setDesc(randomSubject);
     generate(randomStyle, randomSubject);
+  }
+
+  /**
+   * Turns the static generated image into a short "living photo" style
+   * clip using a Ken Burns pan-and-zoom, rendered frame-by-frame onto a
+   * canvas and recorded with MediaRecorder — the same proven mechanism
+   * behind Video Editor's real export. An earlier attempt at animating
+   * images apparently didn't actually change anything and had to be
+   * scrapped; this one genuinely renders new motion into a new video file
+   * each time, not a static image relabeled as a video.
+   */
+  async function animateImage() {
+    if (!result) return;
+    if (!isAnimateSupported()) {
+      setAnimateError("Animation isn't supported on this browser. Try Chrome, Edge, or Firefox.");
+      return;
+    }
+    setAnimating(true);
+    setAnimateError(null);
+    setAnimateProgress(0);
+
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new window.Image();
+        el.crossOrigin = "anonymous";
+        el.onload = () => resolve(el);
+        el.onerror = () => reject(new Error("Failed to load image"));
+        el.src = result;
+      });
+
+      const canvas = animCanvasRef.current;
+      if (!canvas) throw new Error("Canvas not available");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas context unavailable");
+
+      const stream = (canvas as any).captureStream(30) as MediaStream;
+      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+        ? "video/webm;codecs=vp9"
+        : "video/webm";
+      const recorder = new MediaRecorder(stream, { mimeType });
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+      const finished = new Promise<void>((resolve) => { recorder.onstop = () => resolve(); });
+
+      const DURATION_MS = 4000;
+      const coverScale = Math.max(canvas.width / img.width, canvas.height / img.height);
+      const startTime = performance.now();
+
+      recorder.start();
+
+      await new Promise<void>((resolve) => {
+        function frame() {
+          const t = Math.min(1, (performance.now() - startTime) / DURATION_MS);
+          const scale = coverScale * (1 + 0.15 * t);
+          const dw = img.width * scale;
+          const dh = img.height * scale;
+          const dx = (canvas.width - dw) / 2 - t * canvas.width * 0.04;
+          const dy = (canvas.height - dh) / 2 - t * canvas.height * 0.02;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, dx, dy, dw, dh);
+          setAnimateProgress(t * 100);
+          if (t < 1) {
+            requestAnimationFrame(frame);
+          } else {
+            resolve();
+          }
+        }
+        requestAnimationFrame(frame);
+      });
+
+      recorder.stop();
+      await finished;
+
+      const blob = new Blob(chunks, { type: "video/webm" });
+      if (blob.size === 0) throw new Error("Empty recording");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `geenie-${style.name.toLowerCase().replace(/ /g, "-")}-animated.webm`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch {
+      setAnimateError("Couldn't animate this image. Please try again.");
+    } finally {
+      setAnimating(false);
+      setAnimateProgress(0);
+    }
   }
 
   async function download() {
@@ -223,6 +325,14 @@ function CartoonStudio() {
                 <motion.button whileTap={{ scale: 0.97 }} onClick={download} className="flex items-center justify-center gap-2 rounded-xl bg-surface border border-border px-4 py-2.5 text-sm font-medium hover:bg-surface-elevated transition">
                   <Download className="h-4 w-4" />Download
                 </motion.button>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={animateImage} disabled={animating}
+                  className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60 transition" style={grad}>
+                  <Film className="h-4 w-4" />{animating ? `Animating... ${Math.round(animateProgress)}%` : "Animate this image"}
+                </motion.button>
+                {animateError && <p className="text-xs text-red-600 bg-red-50 rounded-xl px-3 py-2">⚠️ {animateError}</p>}
+                {!animateError && !animating && (
+                  <p className="text-[11px] text-muted-foreground text-center -mt-1">Turns it into a short 4-second pan &amp; zoom video clip</p>
+                )}
               </>
             )}
           </div>
@@ -236,7 +346,7 @@ function CartoonStudio() {
           {!isPaid && <a href="/#pricing" className="text-orange-500 font-medium hover:underline">Upgrade for unlimited →</a>}
         </p>
       </div>
-    
+      <canvas ref={animCanvasRef} className="hidden" />
     </div>
   );
 }

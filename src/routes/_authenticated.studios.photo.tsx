@@ -983,11 +983,31 @@ function PhotoEditor() {
       {/* AI GENERATE TAB */}
       {tab === "AI Generate" && (
         <div className="glass rounded-2xl p-5 flex flex-col gap-4">
-          <div className="rounded-xl bg-orange-50 border border-orange-200 p-3">
-            <p className="text-xs text-orange-700 font-medium">✨ Type anything — AI creates the image. Free, no watermark.</p>
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0" style={grad}>
+              <Sparkles className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">AI Image Generator</p>
+              <p className="text-xs text-muted-foreground">Free, no watermark — describe anything and AI creates it</p>
+            </div>
           </div>
-          <textarea value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="e.g. a professional woman at a laptop in a modern office, warm lighting, photorealistic..." className="w-full rounded-xl bg-surface border border-border px-4 py-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-orange-500" rows={3} />
+          <div>
+            <label htmlFor="ai-generate-prompt" className="text-xs font-semibold text-orange-600 mb-1.5 block">
+              ✍️ Type what you want to see
+            </label>
+            <textarea
+              id="ai-generate-prompt"
+              value={aiPrompt}
+              onChange={e => setAiPrompt(e.target.value)}
+              placeholder="e.g. a professional woman at a laptop in a modern office, warm lighting, photorealistic..."
+              className="w-full rounded-2xl bg-white border-2 border-orange-300 px-4 py-4 text-base shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 placeholder:text-muted-foreground/70"
+              rows={4}
+              autoFocus
+            />
+          </div>
           <div className="flex flex-wrap gap-2">
+            <span className="text-xs text-muted-foreground self-center mr-1">Try:</span>
             {AI_PRESETS.map(p => <button key={p} onClick={() => setAiPrompt(p)} className="rounded-full bg-surface border border-border px-3 py-1 text-xs text-muted-foreground hover:bg-surface-elevated transition">{p}</button>)}
           </div>
           <button onClick={generateAI} disabled={aiLoading || !aiPrompt.trim()} className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white disabled:opacity-50" style={grad}>
