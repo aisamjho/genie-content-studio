@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "motion/react";
+import { getUser } from "@/lib/auth";
 import {
   Image as ImageIcon,
   Film,
@@ -226,7 +227,19 @@ function PricingButton({ plan }: { plan: (typeof plans)[number] }) {
       description: `${plan.name} Plan — ${planLabels[plan.name]}`,
       image: "/favicon.svg",
       handler: function () {
-        navigate({ to: "/auth" });
+        // This fires only on a successful payment (Razorpay never calls it
+        // otherwise). Previously nothing here ever wrote the upgraded plan
+        // anywhere — every studio reads geenie_plan from localStorage to
+        // gate watermarks, generation limits, and HD exports, but nothing
+        // in the entire app ever set it after payment. A real, successful
+        // payment was activating no benefit at all. Fixed below.
+        if (typeof window !== "undefined") {
+          localStorage.setItem("geenie_plan", plan.name.toLowerCase());
+        }
+        // Someone upgrading from inside the dashboard is already signed
+        // in — sending them back to the login screen after they just paid
+        // was its own separate bug. Route based on actual auth state.
+        navigate({ to: getUser() ? "/dashboard" : "/auth" });
       },
       prefill: { name: "", email: "" },
       theme: { color: "#7c3aed" },

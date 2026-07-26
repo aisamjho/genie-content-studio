@@ -160,6 +160,23 @@ function drawCinematicBars(ctx: CanvasRenderingContext2D, w: number, h: number) 
   ctx.fillRect(0, h - barHeight, w, barHeight);
 }
 
+/** Converts one of the simple two-color linear-gradient() strings used in
+ *  `bgs` into a real canvas gradient. Falls back to a flat color if the
+ *  string doesn't match (never crashes the export over a cosmetic detail). */
+function parseGradientForCanvas(ctx: CanvasRenderingContext2D, css: string, w: number, h: number): string | CanvasGradient {
+  try {
+    const match = css.match(/linear-gradient\(([\d.]+)deg,\s*(#[0-9a-fA-F]{3,6}),\s*(#[0-9a-fA-F]{3,6})\)/);
+    if (!match) return "#f5f5f7";
+    const [, , c1, c2] = match;
+    const grad = ctx.createLinearGradient(0, 0, w, h);
+    grad.addColorStop(0, c1);
+    grad.addColorStop(1, c2);
+    return grad;
+  } catch {
+    return "#f5f5f7";
+  }
+}
+
 /** Shared live-preview overlay stack — vignette, cinematic bars, film grain,
  *  and light leak rendered as lightweight CSS layers so the preview matches
  *  what download() bakes into the real file. Defined as a top-level
@@ -429,19 +446,91 @@ function PhotoEditor() {
    * is baked directly into the canvas pixels here, in the same order the
    * live preview approximates, so what you see is what you actually get.
    */
-  function download() {
+  /**
+   * Renders the final image to canvas and downloads it. This is the single
+   * source of truth for what gets exported — every toggle below (vignette,
+   * cinematic bars, grain, light leak, chromatic aberration, text overlay,
+   * and — critically — the Background tab's chosen backdrop) is baked
+   * directly into the canvas pixels here, in the same order the live
+   * preview approximates, so what you see is what you actually get.
+   *
+   * The Background tab previously only showed its backdrop in the CSS
+   * preview and never actually drew it into the exported file at all —
+   * every download from that tab silently came out as just the plain
+   * photo with no background whatsoever. Fixed below.
+   */
+  async function download() {
     const src = tab === "AI Generate" ? aiResult : imageSrc;
     if (!src) return;
     setDownloadError(null);
-    const img = new window.Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      try {
-        const canvas = canvasRef.current;
-        if (!canvas) throw new Error("Canvas not available");
-        const ctx = canvas.getContext("2d");
-        if (!ctx) throw new Error("Canvas context unavailable");
-        const isAI = tab === "AI Generate";
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new window.Image();
+        el.crossOrigin = "anonymous";
+        el.onload = () => resolve(el);
+        el.onerror = () => reject(new Error("Failed to load image"));
+        el.src = src;
+      });
+
+      const canvas = canvasRef.current;
+      if (!canvas) throw new Error("Canvas not available");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas context unavailable");
+      const isAI = tab === "AI Generate";
+      const isBgTab = tab === "Background";
+
+      if (isBgTab) {
+        // Canvas matches the photo's own resolution — background gets
+        // cover-scaled to fill it regardless.
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        // 1. Paint the chosen backdrop across the whole canvas first.
+        if (aiBgUrl) {
+          try {
+            const bgImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+              const el = new window.Image();
+              el.crossOrigin = "anonymous";
+              el.onload = () => resolve(el);
+              el.onerror = () => reject(new Error("bg load failed"));
+              el.src = aiBgUrl;
+            });
+            const scale = Math.max(canvas.width / bgImg.width, canvas.height / bgImg.height);
+            const dw = bgImg.width * scale, dh = bgImg.height * scale;
+            ctx.drawImage(bgImg, (canvas.width - dw) / 2, (canvas.height - dh) / 2, dw, dh);
+          } catch {
+            ctx.fillStyle = "#f5f5f7";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          }
+        } else if (bg.value) {
+          ctx.fillStyle = bg.value.startsWith("linear-gradient")
+            ? parseGradientForCanvas(ctx, bg.value, canvas.width, canvas.height)
+            : bg.value;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        } else {
+          ctx.fillStyle = "#f5f5f7";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // 2. Inset the photo with consistent padding + a soft shadow, so it
+        // always reads as an intentionally "placed" photo on a backdrop
+        // regardless of the original photo's own aspect ratio — instead of
+        // an unpredictable letterbox gap that varies photo to photo.
+        const pad = canvas.width * 0.07;
+        const availW = canvas.width - pad * 2;
+        const availH = canvas.height - pad * 2;
+        const scale = Math.min(availW / img.width, availH / img.height, 1);
+        const dw = img.width * scale, dh = img.height * scale;
+        const dx = (canvas.width - dw) / 2, dy = (canvas.height - dh) / 2;
+
+        ctx.save();
+        ctx.shadowColor = "rgba(0,0,0,0.4)";
+        ctx.shadowBlur = canvas.width * 0.025;
+        ctx.shadowOffsetY = canvas.width * 0.012;
+        ctx.filter = filterStyle;
+        ctx.drawImage(img, dx, dy, dw, dh);
+        ctx.restore();
+      } else {
         const r = rotation % 180 !== 0;
         canvas.width = r ? img.height : img.width;
         canvas.height = r ? img.width : img.height;
@@ -460,47 +549,45 @@ function PhotoEditor() {
           if (lightLeak) drawLightLeak(ctx, canvas.width, canvas.height, leakCorner);
           if (filmGrain) drawFilmGrain(ctx, canvas.width, canvas.height, grainIntensity);
         }
-
-        if (textOverlay) {
-          const tx = (textX / 100) * canvas.width;
-          const ty = (textY / 100) * canvas.height;
-          ctx.font = `bold ${textSize}px sans-serif`;
-          ctx.textAlign = "center";
-          if (textBg) {
-            const metrics = ctx.measureText(textOverlay);
-            ctx.fillStyle = "rgba(0,0,0,0.5)";
-            ctx.fillRect(tx - metrics.width / 2 - 8, ty - textSize, metrics.width + 16, textSize + 8);
-          }
-          ctx.fillStyle = textColor;
-          ctx.strokeStyle = "rgba(0,0,0,0.6)";
-          ctx.lineWidth = 2;
-          ctx.strokeText(textOverlay, tx, ty);
-          ctx.fillText(textOverlay, tx, ty);
-        }
-
-        if (!isAI && cinematicBars) drawCinematicBars(ctx, canvas.width, canvas.height);
-
-        if (!isPaid && !isAI) {
-          ctx.font = `bold ${Math.max(14, canvas.width / 40)}px sans-serif`;
-          ctx.fillStyle = "rgba(255,255,255,0.6)";
-          ctx.textAlign = "left";
-          ctx.fillText("Made with Geenie AI", 12, canvas.height - 12);
-        }
-
-        const dataUrl = canvas.toDataURL("image/png");
-        const a = document.createElement("a");
-        a.download = "geenie-photo.png";
-        a.href = dataUrl;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } catch {
-        setDownloadError("Couldn't bake in edits for download. Opening the image in a new tab instead — long-press or right-click to save it.");
-        window.open(src, "_blank");
       }
-    };
-    img.onerror = () => setDownloadError("Couldn't load the image for download. Please try again.");
-    img.src = src;
+
+      if (textOverlay) {
+        const tx = (textX / 100) * canvas.width;
+        const ty = (textY / 100) * canvas.height;
+        ctx.font = `bold ${textSize}px sans-serif`;
+        ctx.textAlign = "center";
+        if (textBg) {
+          const metrics = ctx.measureText(textOverlay);
+          ctx.fillStyle = "rgba(0,0,0,0.5)";
+          ctx.fillRect(tx - metrics.width / 2 - 8, ty - textSize, metrics.width + 16, textSize + 8);
+        }
+        ctx.fillStyle = textColor;
+        ctx.strokeStyle = "rgba(0,0,0,0.6)";
+        ctx.lineWidth = 2;
+        ctx.strokeText(textOverlay, tx, ty);
+        ctx.fillText(textOverlay, tx, ty);
+      }
+
+      if (!isAI && !isBgTab && cinematicBars) drawCinematicBars(ctx, canvas.width, canvas.height);
+
+      if (!isPaid && !isAI) {
+        ctx.font = `bold ${Math.max(14, canvas.width / 40)}px sans-serif`;
+        ctx.fillStyle = "rgba(255,255,255,0.6)";
+        ctx.textAlign = "left";
+        ctx.fillText("Made with Geenie AI", 12, canvas.height - 12);
+      }
+
+      const dataUrl = canvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.download = "geenie-photo.png";
+      a.href = dataUrl;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      setDownloadError("Couldn't bake in edits for download. Opening the image in a new tab instead — long-press or right-click to save it.");
+      window.open(src, "_blank");
+    }
   }
 
   const grad = { background: "var(--gradient-brand)" };
@@ -877,11 +964,12 @@ function PhotoEditor() {
             </div>
             {aiBgError && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">⚠️ {aiBgError}</p>}
           </div>
-          <div className="rounded-2xl overflow-hidden flex items-center justify-center min-h-[240px] relative" style={{ background: aiBgUrl ? undefined : (bg.value || "#f5f5f7") }}>
-            {aiBgUrl && <img src={aiBgUrl} className="absolute inset-0 w-full h-full object-cover rounded-2xl" alt="ai bg" />}
-            {aiBgLoading && <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-2xl z-10"><div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" /></div>}
-            <img src={imageSrc} alt="bg preview" style={{ filter: filterStyle, maxHeight: "240px", position: "relative", zIndex: 2 }} className="max-w-full object-contain" />
+          <div className="rounded-2xl overflow-hidden flex items-center justify-center min-h-[260px] p-6 relative" style={{ background: aiBgUrl ? undefined : (bg.value || "#f5f5f7") }}>
+            {aiBgUrl && <img src={aiBgUrl} className="absolute inset-0 w-full h-full object-cover" alt="ai bg" />}
+            {aiBgLoading && <div className="absolute inset-0 flex items-center justify-center bg-white/70 z-10"><div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" /></div>}
+            <img src={imageSrc} alt="bg preview" style={{ filter: filterStyle, maxHeight: "220px", position: "relative", zIndex: 2, boxShadow: "0 12px 28px rgba(0,0,0,0.35)" }} className="max-w-full object-contain rounded-sm" />
           </div>
+          <p className="text-[11px] text-muted-foreground text-center -mt-1">Photo is framed on the backdrop with a soft shadow — this matches exactly what downloads.</p>
           <div className="grid grid-cols-4 gap-2">
             {bgs.map(b => (
               <button key={b.name} onClick={() => { setBg(b); setAiBgUrl(null); }}
