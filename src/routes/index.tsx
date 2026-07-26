@@ -32,7 +32,7 @@ export const Route = createFileRoute("/")(({
       {
         name: "description",
         content:
-          "Edit photos, edit videos, animate images, generate reels, captions, and business content with one intelligent AI platform.",
+          "Free AI photo editor with cinematic filters, video editor with real exports, anime & cartoon art generator, and Instagram carousel maker — all in one browser-based studio.",
       },
       { property: "og:title", content: "Geenie AI Studio" },
       {
@@ -279,7 +279,7 @@ function LandingPage() {
             className="mx-auto inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface/60 px-4 py-1.5 text-xs text-muted-foreground backdrop-blur"
           >
             <Sparkles className="h-3.5 w-3.5" style={{ color: "var(--magenta)" }} />
-            One platform · Many AI models · Zero complexity
+            5 AI studios · One subscription · Zero complexity
           </motion.div>
 
           <motion.h1
@@ -297,9 +297,20 @@ function LandingPage() {
             transition={{ duration: 0.6, delay: 0.15 }}
             className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground"
           >
-            Edit photos, edit videos, animate images, generate reels, captions, hashtags and
-            business content using one intelligent AI platform.
+            Edit photos with cinematic filters, export real video with music, and turn any idea
+            into anime art, cartoon style, or an Instagram carousel — free to start.
           </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.22 }}
+            className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground"
+          >
+            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5" style={{ color: "var(--magenta)" }} />No card required</span>
+            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5" style={{ color: "var(--magenta)" }} />5 AI studios, one login</span>
+            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5" style={{ color: "var(--magenta)" }} />Your files stay on your device</span>
+          </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -334,6 +345,11 @@ function LandingPage() {
               className="absolute -inset-10 -z-10 rounded-[3rem] opacity-60 blur-3xl"
               style={{ background: "var(--gradient-brand)" }}
             />
+            <div
+              aria-hidden
+              className="absolute -inset-16 -z-20 rounded-[4rem] opacity-25 blur-3xl"
+              style={{ background: "linear-gradient(135deg, var(--violet), var(--magenta))" }}
+            />
             <div className="glass overflow-hidden rounded-3xl p-2 shadow-2xl">
               <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                 {studios.slice(0, 8).map((s) => (
@@ -363,7 +379,7 @@ function LandingPage() {
       <section id="features" className="mx-auto max-w-6xl px-4" style={{ scrollMarginTop: "96px" }}>
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-medium" style={{ color: "var(--magenta)" }}>
-            Ten studios. One workspace.
+            5 AI studios. One workspace.
           </p>
           <h2 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
             Everything you need to ship content.
@@ -408,8 +424,8 @@ function LandingPage() {
             },
             {
               icon: ShieldCheck,
-              title: "Secure by design",
-              desc: "Encrypted storage, validated uploads, GDPR-ready.",
+              title: "Privacy by design",
+              desc: "Your photos and videos are edited right in your browser — never uploaded to a server.",
             },
             {
               icon: Globe,
