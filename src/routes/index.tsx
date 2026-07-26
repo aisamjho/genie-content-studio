@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { getUser } from "@/lib/auth";
 import {
@@ -398,16 +398,20 @@ function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.4, delay: i * 0.03 }}
-              className="glass group rounded-2xl p-6 transition hover:-translate-y-0.5"
             >
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-xl"
-                style={{ background: "var(--gradient-brand)" }}
+              <Link
+                to="/auth"
+                className="glass group block rounded-2xl p-6 transition hover:-translate-y-0.5 cursor-pointer"
               >
-                <s.icon className="h-5 w-5 text-white" />
-              </div>
-              <h3 className="mt-5 text-lg font-semibold">{s.name}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{s.desc}</p>
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-xl"
+                  style={{ background: "var(--gradient-brand)" }}
+                >
+                  <s.icon className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="mt-5 text-lg font-semibold">{s.name}</h3>
+                <p className="mt-2 text-sm text-muted-foreground">{s.desc}</p>
+              </Link>
             </motion.div>
           ))}
         </div>
