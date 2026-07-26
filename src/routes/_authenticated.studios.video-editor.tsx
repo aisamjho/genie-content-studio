@@ -87,6 +87,14 @@ function VideoEditor() {
   const [exportProgress, setExportProgress] = useState(0);
   const [exportError, setExportError] = useState<string | null>(null);
   const [supported, setSupported] = useState(true);
+  // This studio previously had zero paid differentiation at all — every
+  // export was full native resolution with no watermark for every user
+  // regardless of plan, despite being one of the most substantial features
+  // in the app (real MediaRecorder export, cinematic effects, music
+  // mixing). Adding the same free-vs-paid pattern used everywhere else:
+  // capped export resolution + a watermark for free, full native
+  // resolution and no watermark for Creator/Studio.
+  const [plan, setPlan] = useState("starter");
   // Cinematic effects — same trending "movie look" toggles as Photo Editor.
   const [cinematicBars, setCinematicBars] = useState(false);
   const [filmGrain, setFilmGrain] = useState(false);
@@ -112,6 +120,7 @@ function VideoEditor() {
   const noiseTileRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => { setSupported(isExportSupported()); }, []);
+  useEffect(() => { setPlan(localStorage.getItem("geenie_plan") || "starter"); }, []);
   useEffect(() => { if (videoRef.current && !exporting) videoRef.current.playbackRate = speed; }, [speed, exporting]);
   useEffect(() => { if (musicRef.current) musicRef.current.volume = musicVolume / 100; }, [musicVolume]);
   useEffect(() => { if (videoRef.current) videoRef.current.volume = keepOriginalAudio ? originalVolume / 100 : 0; }, [keepOriginalAudio, originalVolume]);
@@ -209,8 +218,17 @@ function VideoEditor() {
     const startTime = (trimStart / 100) * duration;
     const endTime = (trimEnd / 100) * duration;
 
-    canvas.width = video.videoWidth || 720;
-    canvas.height = video.videoHeight || 1280;
+    const isPaid = plan === "creator" || plan === "studio";
+    const nativeW = video.videoWidth || 720;
+    const nativeH = video.videoHeight || 1280;
+    // Free tier exports are capped at a 720px-equivalent long edge — still
+    // perfectly shareable on Reels/Shorts/TikTok, just not full native
+    // resolution. Creator/Studio always get the source's real resolution.
+    const MAX_FREE_EDGE = 720;
+    const longEdge = Math.max(nativeW, nativeH);
+    const capScale = !isPaid && longEdge > MAX_FREE_EDGE ? MAX_FREE_EDGE / longEdge : 1;
+    canvas.width = Math.round(nativeW * capScale);
+    canvas.height = Math.round(nativeH * capScale);
     const ctx = canvas.getContext("2d");
     if (!ctx) { setExporting(false); return; }
 
@@ -344,6 +362,13 @@ function VideoEditor() {
         ctx.fillStyle = "#000000";
         ctx.fillRect(0, 0, canvas.width, barHeight);
         ctx.fillRect(0, canvas.height - barHeight, canvas.width, barHeight);
+      }
+
+      if (!isPaid) {
+        ctx.font = `bold ${Math.max(12, canvas.width / 32)}px sans-serif`;
+        ctx.textAlign = "left";
+        ctx.fillStyle = "rgba(255,255,255,0.55)";
+        ctx.fillText("Made with Geenie AI", canvas.width * 0.02, canvas.height - canvas.height * 0.02);
       }
 
       const pct = ((video.currentTime - startTime) / Math.max(0.001, endTime - startTime)) * 100;
@@ -540,9 +565,14 @@ function VideoEditor() {
             <button onClick={exportVideo} disabled={exporting}
               className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition disabled:opacity-50"
               style={{ background: "linear-gradient(135deg,#ff5a1f,#f7277e)" }}>
-              <Download className="h-4 w-4" />{exporting ? "Exporting..." : "Export Video with Edits"}
+              <Download className="h-4 w-4" />{exporting ? "Exporting..." : (plan === "creator" || plan === "studio") ? "Export Full HD" : "Export Video (720p)"}
             </button>
             <p className="text-[11px] text-muted-foreground text-center">Export renders in real time — a 30s clip takes about 30s (faster at higher speed)</p>
+            {plan !== "creator" && plan !== "studio" && (
+              <p className="text-[11px] text-center text-orange-600 bg-orange-50 rounded-lg py-1.5 w-full">
+                Free exports are capped at 720p with a small watermark · <a href="/#pricing" className="font-medium hover:underline">Upgrade for full HD, no watermark →</a>
+              </p>
+            )}
           </div>
 
           {/* Controls panel */}

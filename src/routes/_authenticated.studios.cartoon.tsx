@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "motion/react";
 import { Upload, Download, Sparkles, RefreshCw, Dice5 } from "lucide-react";
 
@@ -43,10 +43,30 @@ function CartoonStudio() {
   const [result, setResult] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [plan, setPlan] = useState("starter");
+  const [usedCount, setUsedCount] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const requestIdRef = useRef(0);
 
+  // This studio previously had zero paid gating at all — fully unlimited
+  // for every user regardless of plan, while Anime Style capped free users
+  // at 5. That inconsistency meant "unlimited generations" wasn't actually
+  // worth paying for: anyone could just use Cartoon instead of Anime for
+  // free, unlimited character art. Matching Anime's exact cap here so the
+  // paid plans deliver real, consistent value across both studios.
+  useEffect(() => {
+    setPlan(localStorage.getItem("geenie_plan") || "starter");
+    setUsedCount(parseInt(localStorage.getItem("geenie_cartoon_count") || "0"));
+  }, []);
+
+  const isPaid = plan === "creator" || plan === "studio";
+  const remaining = 5 - usedCount;
+
   function generate(styleOverride?: typeof STYLES[0], descOverride?: string) {
+    if (!isPaid && usedCount >= 5) {
+      setError("You've used all 5 free cartoon generations. Upgrade to Creator ($2/mo) for unlimited.");
+      return;
+    }
     // A unique id for this specific request. If the user clicks Generate
     // or Try Again again before this one finishes, any late-arriving
     // onload/onerror/timeout from THIS call becomes stale and is ignored —
@@ -54,6 +74,13 @@ function CartoonStudio() {
     const myId = ++requestIdRef.current;
 
     setLoading(true); setResult(null); setError(null);
+
+    if (!isPaid) {
+      const newCount = usedCount + 1;
+      localStorage.setItem("geenie_cartoon_count", String(newCount));
+      setUsedCount(newCount);
+    }
+
     // Overrides let Surprise Me set state and generate in the same click —
     // reading component state directly here would still see the
     // pre-update values since React state updates aren't synchronous.
@@ -85,6 +112,10 @@ function CartoonStudio() {
   }
 
   function surpriseMe() {
+    if (!isPaid && usedCount >= 5) {
+      setError("You've used all 5 free cartoon generations. Upgrade to Creator ($2/mo) for unlimited.");
+      return;
+    }
     const randomStyle = STYLES[Math.floor(Math.random() * STYLES.length)];
     const randomSubject = surpriseSubjects[Math.floor(Math.random() * surpriseSubjects.length)];
     setStyle(randomStyle);
@@ -151,7 +182,7 @@ function CartoonStudio() {
             <input value={desc} onChange={e => setDesc(e.target.value)}
               placeholder="e.g. a man with glasses and beard, a cat sitting on a chair, a superhero..."
               className="flex-1 rounded-xl bg-surface border border-border px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
-            <button onClick={surpriseMe} disabled={loading} title="Surprise me — random style and subject"
+            <button onClick={surpriseMe} disabled={loading || (!isPaid && usedCount >= 5)} title="Surprise me — random style and subject"
               className="flex items-center gap-1.5 rounded-xl bg-surface border border-border px-3 py-2.5 text-xs font-medium hover:bg-surface-elevated transition disabled:opacity-40 shrink-0">
               <Dice5 className="h-4 w-4" /> Surprise Me
             </button>
@@ -180,7 +211,7 @@ function CartoonStudio() {
               <p className="text-xs text-orange-600 mt-1">Add a description below to personalise your art, or just click Generate.</p>
             </div>
             {error && <p className="text-xs text-red-600 bg-red-50 rounded-xl px-3 py-2">⚠️ {error}</p>}
-            <motion.button whileTap={{ scale: 0.97 }} onClick={() => generate()} disabled={loading}
+            <motion.button whileTap={{ scale: 0.97 }} onClick={() => generate()} disabled={loading || (!isPaid && usedCount >= 5)}
               className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white disabled:opacity-50 transition" style={grad}>
               <Sparkles className="h-4 w-4" />{loading ? "Generating..." : `Create ${style.name} Art`}
             </motion.button>
@@ -196,7 +227,14 @@ function CartoonStudio() {
             )}
           </div>
         </div>
-        <p className="text-xs text-center text-muted-foreground">Free · No watermark · Powered by Pollinations AI</p>
+        <p className="text-xs text-center text-muted-foreground">
+          {isPaid
+            ? "Unlimited generations · Creator Plan · Powered by Pollinations AI"
+            : remaining > 0
+              ? `${remaining} free generations remaining · `
+              : "⚠️ Limit reached · "}
+          {!isPaid && <a href="/#pricing" className="text-orange-500 font-medium hover:underline">Upgrade for unlimited →</a>}
+        </p>
       </div>
     
     </div>

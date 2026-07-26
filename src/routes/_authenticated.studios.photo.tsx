@@ -50,6 +50,18 @@ const LIGHT_LEAK_POS: Record<string, { x: string; y: string }> = {
 };
 type LeakCorner = keyof typeof LIGHT_LEAK_POS;
 
+/** A single draggable sticker placed on the photo — emoji-based so no new
+ *  image assets need to be loaded, works instantly, and renders identically
+ *  in the CSS preview and the canvas export via the same font. */
+interface StickerItem {
+  id: string;
+  emoji: string;
+  x: number; // percentage, 0-100
+  y: number; // percentage, 0-100
+}
+
+const STICKER_EMOJIS = ["🔥", "✨", "❤️", "⭐", "🎉", "👑", "💯", "😂", "😍", "🥳", "👀", "💀", "🌟", "🚀", "🌈", "☀️"];
+
 /** A saved combination of filter + cinematic settings, stored in
  *  localStorage so users can reapply a full "look" in one click instead of
  *  re-toggling everything each time. */
@@ -70,7 +82,11 @@ interface Preset {
   chromaticAmount: number;
 }
 
-const TABS = ["Edit", "Enhance", "Cinematic", "Smart Edit", "AI Generate", "Background"] as const;
+// Enhance previously duplicated Edit's brightness/contrast/saturation
+// sliders in a second tab with only a few unique controls (blur, warmth,
+// vignette, flip) — confusing redundancy for no real benefit. Those unique
+// controls now live in the Edit tab itself; Enhance is removed.
+const TABS = ["Edit", "Cinematic", "Smart Edit", "AI Generate", "Background"] as const;
 type Tab = typeof TABS[number];
 
 const PROMPTS = ["Make it brighter and vivid","Cinematic dramatic look","Vintage warm film","Black and white high contrast","Soft dreamy pastel","Cool blue tone","Professional clean look","Make skin tones warmer","HDR effect","Moody dark contrast"];
@@ -248,6 +264,12 @@ function PhotoEditor() {
   const [textX, setTextX] = useState(50);
   const [textY, setTextY] = useState(85);
   const [textBg, setTextBg] = useState(false);
+  const [stickers, setStickers] = useState<StickerItem[]>([]);
+  // Which overlay (text, or a sticker by id) is currently being dragged —
+  // null when nothing is being dragged. Shared by the one generic pointer
+  // handler below so text and every sticker all drag the same way.
+  const [draggingId, setDraggingId] = useState<string | "text" | null>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   // Cinematic effects — trending "movie-look" toggles (see makeNoiseCanvas /
   // applyChromaticAberration / drawLightLeak / drawCinematicBars above for
   // how each one is actually baked into the exported file, not just shown
@@ -335,8 +357,49 @@ function PhotoEditor() {
     setBrightness(100); setContrast(100); setSaturation(100);
     setBlur(0); setWarmth(0);
     setVignette(false); setFlipH(false);
-    setActiveFilter(filters[0]); setRotation(0); setTextOverlay("");
+    setActiveFilter(filters[0]); setRotation(0); setTextOverlay(""); setStickers([]);
     setCinematicBars(false); setFilmGrain(false); setLightLeak(false); setChromaticAb(false);
+  }
+
+  function addSticker(emoji: string) {
+    setStickers((s) => [...s, { id: Math.random().toString(36).slice(2), emoji, x: 50, y: 50 }]);
+  }
+
+  function removeSticker(id: string) {
+    setStickers((s) => s.filter((st) => st.id !== id));
+  }
+
+  /**
+   * One generic pointer-drag implementation shared by the text overlay and
+   * every sticker — whichever overlay is grabbed becomes `draggingId`, and
+   * pointer movement is translated into a percentage position relative to
+   * the preview container so it works identically at any preview size and
+   * for touch or mouse alike.
+   */
+  function handleOverlayPointerDown(id: string | "text") {
+    return (e: React.PointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDraggingId(id);
+    };
+  }
+
+  function handlePreviewPointerMove(e: React.PointerEvent) {
+    if (!draggingId || !previewRef.current) return;
+    const rect = previewRef.current.getBoundingClientRect();
+    const px = ((e.clientX - rect.left) / rect.width) * 100;
+    const py = ((e.clientY - rect.top) / rect.height) * 100;
+    const x = Math.min(96, Math.max(4, px));
+    const y = Math.min(96, Math.max(4, py));
+    if (draggingId === "text") {
+      setTextX(x); setTextY(y);
+    } else {
+      setStickers((s) => s.map((st) => (st.id === draggingId ? { ...st, x, y } : st)));
+    }
+  }
+
+  function handlePreviewPointerUp() {
+    setDraggingId(null);
   }
 
   async function generateAI() {
@@ -568,6 +631,20 @@ function PhotoEditor() {
         ctx.fillText(textOverlay, tx, ty);
       }
 
+      if (stickers.length > 0) {
+        // Matches the preview's clamp(28px, 9vw, 56px) proportionally —
+        // roughly 9% of the image width, so a sticker looks the same
+        // relative size in the download as it did while placing it.
+        const stickerFontPx = Math.round(canvas.width * 0.09);
+        ctx.font = `${stickerFontPx}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        for (const st of stickers) {
+          ctx.fillText(st.emoji, (st.x / 100) * canvas.width, (st.y / 100) * canvas.height);
+        }
+        ctx.textBaseline = "alphabetic";
+      }
+
       if (!isAI && !isBgTab && cinematicBars) drawCinematicBars(ctx, canvas.width, canvas.height);
 
       if (!isPaid && !isAI) {
@@ -625,7 +702,7 @@ function PhotoEditor() {
         </div>
       )}
 
-      {(tab === "Edit" || tab === "Enhance" || tab === "Cinematic" || tab === "Smart Edit" || tab === "Background") && !imageSrc && (
+      {(tab === "Edit" || tab === "Cinematic" || tab === "Smart Edit" || tab === "Background") && !imageSrc && (
         <button onClick={() => fileRef.current?.click()}
           className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border bg-surface/50 py-20 hover:border-orange-500/50 transition">
           <div className="flex h-14 w-14 items-center justify-center rounded-full" style={grad}><Upload className="h-6 w-6 text-white" /></div>
@@ -638,22 +715,36 @@ function PhotoEditor() {
       {tab === "Edit" && imageSrc && (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-4">
           <div className="flex flex-col gap-3">
-            <div className="rounded-2xl overflow-hidden bg-black/10 flex items-center justify-center min-h-[280px] relative">
+            <div ref={previewRef}
+              onPointerMove={handlePreviewPointerMove} onPointerUp={handlePreviewPointerUp} onPointerLeave={handlePreviewPointerUp}
+              className="rounded-2xl overflow-hidden bg-black/10 flex items-center justify-center min-h-[280px] relative touch-none">
               {previewImg}
               {textOverlay && (
-                <div className="absolute" style={{ left: `${textX}%`, top: `${textY}%`, transform: "translate(-50%, -50%)" }}>
+                <div onPointerDown={handleOverlayPointerDown("text")}
+                  className="absolute cursor-move select-none" style={{ left: `${textX}%`, top: `${textY}%`, transform: "translate(-50%, -50%)" }}>
                   <p className="font-bold whitespace-nowrap px-2 py-0.5 rounded"
                     style={{ color: textColor, textShadow: "2px 2px 4px rgba(0,0,0,0.7)", fontSize: `${textSize * 0.4}px`, background: textBg ? "rgba(0,0,0,0.5)" : "transparent" }}>
                     {textOverlay}
                   </p>
                 </div>
               )}
+              {stickers.map((st) => (
+                <div key={st.id} onPointerDown={handleOverlayPointerDown(st.id)}
+                  className="absolute cursor-move select-none group" style={{ left: `${st.x}%`, top: `${st.y}%`, transform: "translate(-50%, -50%)", fontSize: "clamp(28px, 9vw, 56px)", lineHeight: 1 }}>
+                  {st.emoji}
+                  <button onPointerDown={(e) => e.stopPropagation()} onClick={() => removeSticker(st.id)}
+                    className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-black/70 text-white text-[9px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition">×</button>
+                </div>
+              ))}
               <CinematicOverlayLayer
                 vignette={vignette} lightLeak={lightLeak} leakCorner={leakCorner}
                 filmGrain={filmGrain} noiseTileUrl={noiseTileUrl} grainIntensity={grainIntensity}
                 cinematicBars={cinematicBars}
               />
             </div>
+            {(textOverlay || stickers.length > 0) && (
+              <p className="text-[11px] text-center text-muted-foreground">👆 Drag the text {stickers.length > 0 ? "or stickers" : ""} directly on the photo to reposition</p>
+            )}
             {hasCinematicFx && (
               <p className="text-[11px] text-center text-orange-600 bg-orange-50 rounded-lg py-1.5">🎬 Cinematic effects active — edit them in the Cinematic tab</p>
             )}
@@ -666,7 +757,7 @@ function PhotoEditor() {
               </button>
             </div>
           </div>
-          <div className="glass rounded-2xl p-4 flex flex-col gap-4">
+          <div className="glass rounded-2xl p-4 flex flex-col gap-4 max-h-[640px] overflow-y-auto">
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2">Filters</p>
               <div className="grid grid-cols-4 gap-1.5">
@@ -683,69 +774,39 @@ function PhotoEditor() {
             <Slider icon={Sun} label="Brightness" value={brightness} onChange={setBrightness} min={50} max={150} />
             <Slider icon={Contrast} label="Contrast" value={contrast} onChange={setContrast} min={50} max={150} />
             <Slider icon={Droplet} label="Saturation" value={saturation} onChange={setSaturation} min={0} max={200} />
+            <Slider icon={Palette} label="Blur/Soften" value={blur} onChange={setBlur} min={0} max={8} suffix="px" />
+            <div>
+              <div className="flex justify-between mb-1"><span className="text-xs text-muted-foreground">🌡️ Warmth</span><span className="text-xs text-muted-foreground">{warmth > 0 ? `+${warmth}` : warmth}</span></div>
+              <input type="range" min={-50} max={50} value={warmth} onChange={e => setWarmth(Number(e.target.value))} className="w-full accent-orange-500" />
+            </div>
             {/* Text overlay */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 border-t border-border pt-3">
               <label className="text-xs font-medium text-muted-foreground flex items-center gap-1"><Type className="h-3 w-3" /> Text Overlay</label>
-              <input value={textOverlay} onChange={e => setTextOverlay(e.target.value)} placeholder="Add text to photo..." className="w-full rounded-xl bg-surface border border-border px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              <input value={textOverlay} onChange={e => setTextOverlay(e.target.value)} placeholder="Add text — then drag it on the photo" className="w-full rounded-xl bg-surface border border-border px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-orange-500" />
               <div className="flex items-center gap-2">
                 <label className="text-[11px] text-muted-foreground shrink-0">Color:</label>
                 <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} className="h-7 w-10 rounded border border-border cursor-pointer" />
                 <label className="text-[11px] text-muted-foreground shrink-0 ml-2">Size:</label>
                 <input type="range" min={16} max={80} value={textSize} onChange={e => setTextSize(Number(e.target.value))} className="flex-1 accent-orange-500" />
               </div>
-              <div>
-                <label className="text-[11px] text-muted-foreground block mb-1">Position X: {textX}%</label>
-                <input type="range" min={5} max={95} value={textX} onChange={e => setTextX(Number(e.target.value))} className="w-full accent-orange-500" />
-              </div>
-              <div>
-                <label className="text-[11px] text-muted-foreground block mb-1">Position Y: {textY}%</label>
-                <input type="range" min={5} max={95} value={textY} onChange={e => setTextY(Number(e.target.value))} className="w-full accent-orange-500" />
-              </div>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={textBg} onChange={e => setTextBg(e.target.checked)} className="accent-orange-500" />
                 <span className="text-[11px] text-muted-foreground">Text background</span>
               </label>
             </div>
+            {/* Stickers */}
+            <div className="flex flex-col gap-2 border-t border-border pt-3">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">✨ Stickers <span className="text-[9px] bg-orange-100 text-orange-600 px-1 rounded ml-1">New</span></label>
+              <div className="grid grid-cols-8 gap-1">
+                {STICKER_EMOJIS.map((e) => (
+                  <button key={e} onClick={() => addSticker(e)} className="rounded-lg bg-surface border border-border py-1.5 text-base hover:bg-surface-elevated transition">{e}</button>
+                ))}
+              </div>
+              {stickers.length > 0 && <p className="text-[11px] text-muted-foreground">{stickers.length} sticker{stickers.length > 1 ? "s" : ""} on photo — tap × to remove</p>}
+            </div>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={vignette} onChange={e => setVignette(e.target.checked)} className="accent-orange-500" />
               <span className="text-xs text-muted-foreground">Vignette effect</span>
-            </label>
-            <button onClick={reset} className={`flex items-center justify-center gap-2 px-4 py-2 text-xs ${surfaceBtn}`}><RotateCcw className="h-3.5 w-3.5" />Reset All</button>
-          </div>
-        </div>
-      )}
-
-      {/* ENHANCE TAB */}
-      {tab === "Enhance" && imageSrc && (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-4">
-          <div className="flex flex-col gap-3">
-            <div className="rounded-2xl overflow-hidden bg-black/10 flex items-center justify-center min-h-[280px] relative">
-              {previewImg}
-              <CinematicOverlayLayer
-                vignette={vignette} lightLeak={lightLeak} leakCorner={leakCorner}
-                filmGrain={filmGrain} noiseTileUrl={noiseTileUrl} grainIntensity={grainIntensity}
-                cinematicBars={cinematicBars}
-              />
-            </div>
-            <button onClick={download} className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white" style={grad}><Download className="h-4 w-4" />{isPaid ? "Download HD" : "Download (watermarked)"}</button>
-          </div>
-          <div className="glass rounded-2xl p-4 flex flex-col gap-4">
-            <p className="text-sm font-semibold">🎨 Advanced Enhance</p>
-            <Slider icon={Sun} label="Brightness" value={brightness} onChange={setBrightness} min={50} max={150} />
-            <Slider icon={Contrast} label="Contrast" value={contrast} onChange={setContrast} min={50} max={150} />
-            <Slider icon={Droplet} label="Saturation" value={saturation} onChange={setSaturation} min={0} max={200} />
-            <Slider icon={Palette} label="Blur/Soften" value={blur} onChange={setBlur} min={0} max={8} suffix="px" />
-            <div>
-              <div className="flex justify-between mb-1"><span className="text-xs text-muted-foreground">🌡️ Warmth</span><span className="text-xs text-muted-foreground">{warmth > 0 ? `+${warmth}` : warmth}</span></div>
-              <input type="range" min={-50} max={50} value={warmth} onChange={e => setWarmth(Number(e.target.value))} className="w-full accent-orange-500" />
-            </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={vignette} onChange={e => setVignette(e.target.checked)} className="accent-orange-500" />
-              <span className="text-xs text-muted-foreground">Add vignette (dark edges)</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={flipH} onChange={e => setFlipH(e.target.checked)} className="accent-orange-500" />
-              <span className="text-xs text-muted-foreground">Flip horizontal (mirror)</span>
             </label>
             <button onClick={reset} className={`flex items-center justify-center gap-2 px-4 py-2 text-xs ${surfaceBtn}`}><RotateCcw className="h-3.5 w-3.5" />Reset All</button>
           </div>
