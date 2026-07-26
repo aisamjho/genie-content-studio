@@ -425,12 +425,12 @@ function VideoEditor() {
   const hasCinematicFx = cinematicBars || filmGrain || lightLeak;
 
   const tabs = [
-    { key: "filters" as const, label: "🎨" },
-    { key: "cinematic" as const, label: "🎬" },
-    { key: "text" as const, label: "✏️" },
-    { key: "music" as const, label: "🎵" },
-    { key: "speed" as const, label: "⚡" },
-    { key: "trim" as const, label: "✂️" },
+    { key: "filters" as const, label: "🎨", text: "Filters" },
+    { key: "cinematic" as const, label: "🎬", text: "Cinematic" },
+    { key: "text" as const, label: "✏️", text: "Text" },
+    { key: "music" as const, label: "🎵", text: "Music" },
+    { key: "speed" as const, label: "⚡", text: "Speed" },
+    { key: "trim" as const, label: "✂️", text: "Trim" },
   ];
 
   return (
@@ -580,8 +580,9 @@ function VideoEditor() {
             <div className="flex border-b border-border">
               {tabs.map((tab) => (
                 <button key={tab.key} onClick={() => setActiveTab(tab.key)} disabled={exporting}
-                  className={`flex-1 py-3 text-base transition disabled:opacity-40 ${activeTab === tab.key ? "border-b-2 border-orange-500 bg-surface/50" : "text-muted-foreground hover:text-foreground"}`}>
-                  {tab.label}
+                  className={`flex-1 py-2.5 flex flex-col items-center gap-0.5 transition disabled:opacity-40 ${activeTab === tab.key ? "border-b-2 border-orange-500 bg-surface/50" : "text-muted-foreground hover:text-foreground"}`}>
+                  <span className="text-base">{tab.label}</span>
+                  <span className="text-[9px] font-medium">{tab.text}</span>
                 </button>
               ))}
             </div>

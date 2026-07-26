@@ -1,14 +1,17 @@
 import { Link } from "@tanstack/react-router";
 import { Sparkles, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { useLanguage } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { t } = useLanguage();
 
   const navLinks = [
-    { href: "/#features", label: "Features" },
-    { href: "/#pricing", label: "Pricing" },
-    { href: "/#faq", label: "FAQ" },
+    { href: "/#features", label: t("landing.navFeatures") },
+    { href: "/#pricing", label: t("landing.navPricing") },
+    { href: "/#faq", label: t("landing.navFaq") },
   ];
 
   return (
@@ -40,25 +43,26 @@ export function SiteHeader() {
               className="transition hover:text-foreground"
               activeProps={{ className: "text-foreground" }}
             >
-              About
+              {t("landing.navAbout")}
             </Link>
             <Link
               to="/contact"
               className="transition hover:text-foreground"
               activeProps={{ className: "text-foreground" }}
             >
-              Contact
+              {t("landing.navContact")}
             </Link>
           </nav>
 
-          {/* Desktop CTA */}
-          <div className="hidden md:block">
+          {/* Desktop CTA + language */}
+          <div className="hidden md:flex items-center gap-2">
+            <LanguageSwitcher compact />
             <Link
               to="/auth"
               className="rounded-xl px-4 py-2 text-sm font-medium text-white shadow-lg transition hover:opacity-90"
               style={{ background: "var(--gradient-brand)" }}
             >
-              Get started
+              {t("landing.getStarted")}
             </Link>
           </div>
 
@@ -70,7 +74,7 @@ export function SiteHeader() {
               style={{ background: "var(--gradient-brand)" }}
               onClick={() => setMobileOpen(false)}
             >
-              Get started
+              {t("landing.getStarted")}
             </Link>
             <button
               type="button"
@@ -104,7 +108,7 @@ export function SiteHeader() {
                 activeProps={{ className: "text-foreground bg-surface-elevated" }}
                 onClick={() => setMobileOpen(false)}
               >
-                About
+                {t("landing.navAbout")}
               </Link>
               <Link
                 to="/contact"
@@ -112,8 +116,11 @@ export function SiteHeader() {
                 activeProps={{ className: "text-foreground bg-surface-elevated" }}
                 onClick={() => setMobileOpen(false)}
               >
-                Contact
+                {t("landing.navContact")}
               </Link>
+              <div className="mt-2 border-t border-border/40 pt-3">
+                <LanguageSwitcher dropUp={false} />
+              </div>
             </nav>
           </div>
         )}

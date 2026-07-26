@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { getUser } from "@/lib/auth";
+import { useLanguage } from "@/lib/i18n";
 import {
   Image as ImageIcon,
   Film,
@@ -265,6 +266,7 @@ function PricingButton({ plan }: { plan: (typeof plans)[number] }) {
 }
 
 function LandingPage() {
+  const { t } = useLanguage();
   return (
     <div className="min-h-screen">
       <SiteHeader />
@@ -323,13 +325,13 @@ function LandingPage() {
               className="glow inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-medium text-white transition hover:opacity-95 active:scale-95"
               style={{ background: "var(--gradient-brand)" }}
             >
-              Start creating free <ArrowRight className="h-4 w-4" />
+              {t("landing.startCreatingFree")} <ArrowRight className="h-4 w-4" />
             </a>
             <a
               href="#features"
               className="inline-flex items-center gap-2 rounded-xl border border-border/70 bg-surface/60 px-6 py-3 text-sm font-medium backdrop-blur transition hover:bg-surface"
             >
-              Explore studios
+              {t("landing.exploreStudios")}
             </a>
           </motion.div>
 

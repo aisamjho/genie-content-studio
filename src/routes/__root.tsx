@@ -12,6 +12,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { useEffect, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
+import { LanguageProvider } from "@/lib/i18n";
 
 function NotFoundPage() {
   return (
@@ -143,23 +144,25 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {isOffline && (
-        <div className="fixed top-0 left-0 right-0 z-[100] bg-red-500 text-white text-xs font-medium text-center py-1.5">
-          ⚠️ You're offline — some features need an internet connection. Reconnect to continue.
-        </div>
-      )}
-      <Outlet />
-      <Toaster
-        position="top-right"
-        richColors
-        toastOptions={{
-          style: {
-            background: "oklch(0.21 0.06 295)",
-            border: "1px solid oklch(0.32 0.06 295 / 60%)",
-            color: "oklch(0.97 0.01 300)",
-          },
-        }}
-      />
+      <LanguageProvider>
+        {isOffline && (
+          <div className="fixed top-0 left-0 right-0 z-[100] bg-red-500 text-white text-xs font-medium text-center py-1.5">
+            ⚠️ You're offline — some features need an internet connection. Reconnect to continue.
+          </div>
+        )}
+        <Outlet />
+        <Toaster
+          position="top-right"
+          richColors
+          toastOptions={{
+            style: {
+              background: "oklch(0.21 0.06 295)",
+              border: "1px solid oklch(0.32 0.06 295 / 60%)",
+              color: "oklch(0.97 0.01 300)",
+            },
+          }}
+        />
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }

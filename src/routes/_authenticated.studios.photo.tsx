@@ -86,7 +86,7 @@ interface Preset {
 // sliders in a second tab with only a few unique controls (blur, warmth,
 // vignette, flip) — confusing redundancy for no real benefit. Those unique
 // controls now live in the Edit tab itself; Enhance is removed.
-const TABS = ["Edit", "Cinematic", "Smart Edit", "AI Generate", "Background"] as const;
+const TABS = ["Edit", "Cinematic", "Ask AI", "AI Generate", "Background"] as const;
 type Tab = typeof TABS[number];
 
 const PROMPTS = ["Make it brighter and vivid","Cinematic dramatic look","Vintage warm film","Black and white high contrast","Soft dreamy pastel","Cool blue tone","Professional clean look","Make skin tones warmer","HDR effect","Moody dark contrast"];
@@ -683,7 +683,7 @@ function PhotoEditor() {
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={grad}><ImageIcon className="h-5 w-5 text-white" /></div>
         <div>
           <h1 className="text-xl font-semibold">Photo Editor</h1>
-          <p className="text-sm text-muted-foreground">Edit · Enhance · Cinematic · Smart AI · Generate · Background</p>
+          <p className="text-sm text-muted-foreground">Edit · Cinematic effects · Ask AI · Generate images · Change background</p>
         </div>
       </div>
 
@@ -702,7 +702,7 @@ function PhotoEditor() {
         </div>
       )}
 
-      {(tab === "Edit" || tab === "Cinematic" || tab === "Smart Edit" || tab === "Background") && !imageSrc && (
+      {(tab === "Edit" || tab === "Cinematic" || tab === "Ask AI" || tab === "Background") && !imageSrc && (
         <button onClick={() => fileRef.current?.click()}
           className="flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-border bg-surface/50 py-20 hover:border-orange-500/50 transition">
           <div className="flex h-14 w-14 items-center justify-center rounded-full" style={grad}><Upload className="h-6 w-6 text-white" /></div>
@@ -942,7 +942,7 @@ function PhotoEditor() {
       )}
 
       {/* SMART EDIT TAB */}
-      {tab === "Smart Edit" && imageSrc && (
+      {tab === "Ask AI" && imageSrc && (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
           <div className="flex flex-col gap-3">
             <div className="rounded-2xl overflow-hidden bg-black/10 flex items-center justify-center min-h-[280px] relative">
@@ -956,7 +956,7 @@ function PhotoEditor() {
             <button onClick={download} className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white" style={grad}><Download className="h-4 w-4" />{isPaid ? "Download HD" : "Download (watermarked)"}</button>
           </div>
           <div className="glass rounded-2xl p-4 flex flex-col gap-3">
-            <p className="text-sm font-semibold">✨ Smart Edit</p>
+            <p className="text-sm font-semibold">✨ Ask AI</p>
             <p className="text-xs text-muted-foreground">Type what you want — AI applies it</p>
             {!isPaid ? (
               <div className="rounded-xl bg-orange-50 border border-orange-300 p-4 text-center flex flex-col gap-2">

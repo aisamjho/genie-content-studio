@@ -8,6 +8,8 @@ import {
 } from "@tanstack/react-router";
 import { useState } from "react";
 import { signOut, getUser, useAuth } from "@/lib/auth";
+import { useLanguage } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { toast } from "sonner";
 import {
   Sparkles,
@@ -45,6 +47,7 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -83,25 +86,30 @@ function AuthenticatedLayout() {
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
         <NavGroup title="Workspace">
-          <NavItem to="/dashboard" icon={LayoutDashboard} label="Overview" pathname={pathname} onClick={() => setSidebarOpen(false)} />
-          <NavItem icon={History} label="History" pathname={pathname} />
+          <NavItem to="/dashboard" icon={LayoutDashboard} label={t("nav.overview")} pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem icon={History} label={t("nav.history")} pathname={pathname} />
           
         </NavGroup>
 
         <NavGroup title="Studios">
-          <NavItem to="/studios/photo" icon={ImageIcon} label="Photo Editor" pathname={pathname} onClick={() => setSidebarOpen(false)} />
-          <NavItem to="/studios/video-editor" icon={Video} label="Video Editor" pathname={pathname} onClick={() => setSidebarOpen(false)} />
-          <NavItem to="/studios/anime" icon={Sparkles} label="Anime Style" pathname={pathname} onClick={() => setSidebarOpen(false)} />
-          <NavItem to="/studios/cartoon" icon={Palette} label="Cartoon & Comic" pathname={pathname} onClick={() => setSidebarOpen(false)} />
-          <NavItem to="/studios/carousel" icon={Layers} label="Carousel Maker" pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/photo" icon={ImageIcon} label={t("nav.photoEditor")} pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/video-editor" icon={Video} label={t("nav.videoEditor")} pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/anime" icon={Sparkles} label={t("nav.animeStyle")} pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/cartoon" icon={Palette} label={t("nav.cartoonComic")} pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/carousel" icon={Layers} label={t("nav.carouselMaker")} pathname={pathname} onClick={() => setSidebarOpen(false)} />
         </NavGroup>
 
         <NavGroup title="Account">
-          <NavItem icon={CreditCard} label="Billing" pathname={pathname} onClick={() => window.open("/#pricing", "_self")} />
+          <NavItem href="/#pricing" icon={CreditCard} label={t("nav.billing")} pathname={pathname} />
           
           
         </NavGroup>
       </nav>
+
+      {/* Language switcher */}
+      <div className="border-t border-border/40 p-3">
+        <LanguageSwitcher />
+      </div>
 
       {/* User row */}
       <div className="border-t border-border/40 p-3">
@@ -118,8 +126,8 @@ function AuthenticatedLayout() {
           </div>
           <button
             onClick={handleSignOut}
-            title="Sign out"
-            aria-label="Sign out"
+            title={t("nav.signOut")}
+            aria-label={t("nav.signOut")}
             className="rounded-lg p-1.5 text-muted-foreground transition hover:bg-surface-elevated hover:text-foreground"
           >
             <LogOut className="h-4 w-4" />
@@ -196,6 +204,7 @@ function NavGroup({ title, children }: { title: string; children: React.ReactNod
 
 function NavItem({
   to,
+  href,
   icon: Icon,
   label,
   pathname,
@@ -203,6 +212,7 @@ function NavItem({
   onClick,
 }: {
   to?: string;
+  href?: string;
   icon: typeof LayoutDashboard;
   label: string;
   pathname: string;
@@ -211,7 +221,7 @@ function NavItem({
 }) {
   const active = to ? pathname === to || pathname.startsWith(to + "/") : false;
 
-  if (soon || !to) {
+  if (soon || (!to && !href)) {
     return (
       <div
         className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground/40 cursor-not-allowed"
@@ -229,15 +239,32 @@ function NavItem({
     );
   }
 
+  const sharedClass = `flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm transition ${
+    active
+      ? "bg-surface-elevated text-foreground font-medium"
+      : "text-muted-foreground hover:bg-surface-elevated/60 hover:text-foreground"
+  }`;
+
+  // A plain anchor for section links (like pricing) that aren't a real
+  // in-app route — previously these had no `to`, so they fell into the
+  // disabled "Soon" branch above and silently ignored any onClick passed
+  // in, even when the intent was clearly for them to be clickable.
+  if (href && !to) {
+    return (
+      <a href={href} onClick={onClick} className={sharedClass}>
+        <span className="flex items-center gap-3">
+          <Icon className="h-4 w-4 shrink-0" />
+          {label}
+        </span>
+      </a>
+    );
+  }
+
   return (
     <Link
       to={to}
       onClick={onClick}
-      className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm transition ${
-        active
-          ? "bg-surface-elevated text-foreground font-medium"
-          : "text-muted-foreground hover:bg-surface-elevated/60 hover:text-foreground"
-      }`}
+      className={sharedClass}
     >
       <span className="flex items-center gap-3">
         <Icon className="h-4 w-4 shrink-0" />

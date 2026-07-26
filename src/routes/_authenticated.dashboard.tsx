@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useAuth } from "@/lib/auth";
+import { useLanguage } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 import { AdSlot } from "@/components/ad-slot";
 import {
@@ -14,11 +15,11 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 const studios = [
-  { icon: ImageIcon, name: "Photo Editor", desc: "Filters, cinematic FX, Smart AI Edit, AI backgrounds.", route: "/studios/photo" },
-  { icon: Video,     name: "Video Editor", desc: "Filters, cinematic FX, music, text — exports real video.", route: "/studios/video-editor" },
-  { icon: Sparkles,  name: "Anime Style",  desc: "Generate anime art in 8 styles from a text prompt.", route: "/studios/anime", badge: "🔥 Popular" },
-  { icon: Palette,   name: "Cartoon & Comic", desc: "Disney, Pixar, Comics, Manga, Lego, Sticker styles.", route: "/studios/cartoon" },
-  { icon: Layers,    name: "Carousel Maker", desc: "Multi-slide Instagram carousels — quotes, tips, before/after.", route: "/studios/carousel", badge: "✨ New" },
+  { icon: ImageIcon, nameKey: "nav.photoEditor", desc: "Filters, movie-style effects, type what you want changed, AI backgrounds.", route: "/studios/photo" },
+  { icon: Video,     nameKey: "nav.videoEditor", desc: "Filters, movie-style effects, music, captions — download real video.", route: "/studios/video-editor" },
+  { icon: Sparkles,  nameKey: "nav.animeStyle",  desc: "Generate anime art in 8 styles from a text prompt.", route: "/studios/anime", badge: "🔥 Popular" },
+  { icon: Palette,   nameKey: "nav.cartoonComic", desc: "Disney, Pixar, Comics, Manga, Lego, Sticker styles.", route: "/studios/cartoon" },
+  { icon: Layers,    nameKey: "nav.carouselMaker", desc: "Multi-slide Instagram carousels — quotes, tips, before/after.", route: "/studios/carousel", badge: "✨ New" },
 ];
 
 const PLAN_LABELS: Record<string, { label: string; color: string }> = {
@@ -30,6 +31,7 @@ const PLAN_LABELS: Record<string, { label: string; color: string }> = {
 function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [plan, setPlan] = useState("starter");
   const [animeUsed, setAnimeUsed] = useState(0);
   const [presetCount, setPresetCount] = useState(0);
@@ -60,10 +62,10 @@ function DashboardPage() {
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <p className="text-sm font-medium" style={{ color: "var(--magenta)" }}>Dashboard</p>
           <h1 className="mt-1 text-4xl font-semibold tracking-tight md:text-5xl">
-            Hey {firstName} 👋
+            {t("dash.hey")} {firstName} 👋
           </h1>
           <p className="mt-2 text-muted-foreground">
-            All 5 studios are ready. Pick one below and start creating.
+            {t("dash.subtitle")}
           </p>
         </motion.div>
 
@@ -76,7 +78,7 @@ function DashboardPage() {
             <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "var(--gradient-brand)" }}>
               {isPaid ? <Crown className="h-3.5 w-3.5 text-white" /> : <Sparkles className="h-3.5 w-3.5 text-white" />}
             </div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your Plan</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("dash.yourPlan")}</p>
           </div>
           <p className="text-2xl font-semibold" style={{ color: planInfo.color }}>{planInfo.label}</p>
           <p className="text-xs text-muted-foreground">
@@ -88,7 +90,7 @@ function DashboardPage() {
               className="mt-1 text-center w-full rounded-lg px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90 active:scale-[0.97]"
               style={{ background: "var(--gradient-brand)" }}
             >
-              Upgrade — $2/mo
+              {t("dash.upgrade")} — $2/mo
             </a>
           )}
         </motion.div>
@@ -97,9 +99,9 @@ function DashboardPage() {
       {/* ── Stats — real, tracked numbers, not static placeholders ─────── */}
       <div className="mt-10 grid gap-4 sm:grid-cols-3">
         {[
-          { icon: Zap,       label: "Anime Generated", value: animeUsed, note: animeUsed === 0 ? "Try the Anime Style studio" : `${animeRemaining} free left this month` },
-          { icon: Bookmark,  label: "Saved Presets",   value: presetCount, note: presetCount === 0 ? "Save a look in Photo Editor" : "In your Cinematic tab" },
-          { icon: TrendingUp,label: "Current Plan",    value: planInfo.label, note: isPaid ? "Unlimited access" : "Free tier active" },
+          { icon: Zap,       label: t("dash.animeGenerated"), value: animeUsed, note: animeUsed === 0 ? "Try the Anime Style studio" : `${animeRemaining} free left this month` },
+          { icon: Bookmark,  label: t("dash.savedPresets"),   value: presetCount, note: presetCount === 0 ? "Save a look in Photo Editor" : "In your Cinematic tab" },
+          { icon: TrendingUp,label: t("dash.currentPlan"),    value: planInfo.label, note: isPaid ? "Unlimited access" : "Free tier active" },
         ].map((s, i) => (
           <motion.div
             key={s.label}
@@ -121,15 +123,15 @@ function DashboardPage() {
       <div className="mt-12">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold">Your Studios</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Everything below is live — tap any studio to start.</p>
+            <h2 className="text-xl font-semibold">{t("dash.yourStudios")}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{t("dash.studiosSubtitle")}</p>
           </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {studios.map((s, i) => (
             <motion.button
-              key={s.name}
+              key={s.nameKey}
               type="button"
               onClick={() => navigate({ to: s.route })}
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -147,10 +149,10 @@ function DashboardPage() {
                   </span>
                 )}
               </div>
-              <h3 className="mt-4 text-sm font-semibold">{s.name}</h3>
+              <h3 className="mt-4 text-sm font-semibold">{t(s.nameKey)}</h3>
               <p className="mt-1 flex-1 text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
               <span className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-purple-400 group-hover:text-purple-300 transition-colors">
-                Open studio <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                {t("dash.openStudio")} <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
               </span>
             </motion.button>
           ))}
@@ -164,9 +166,9 @@ function DashboardPage() {
         className="glass relative mt-10 overflow-hidden rounded-2xl p-7"
       >
         <div aria-hidden className="absolute inset-0 -z-10 opacity-15" style={{ background: "var(--gradient-brand)" }} />
-        <h3 className="text-lg font-semibold">Go unlimited with Creator</h3>
+        <h3 className="text-lg font-semibold">{t("dash.ctaTitle")}</h3>
         <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-          Unlimited anime & cartoon generations, no watermark on photos, HD video exports, and Smart AI Edit — for $2/month.
+          Unlimited anime & cartoon generations, no watermark on photos, HD video exports, and the Ask AI editor — for $2/month.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <a
@@ -174,13 +176,13 @@ function DashboardPage() {
             className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90 active:scale-[0.98]"
             style={{ background: "var(--gradient-brand)" }}
           >
-            View pricing <ArrowRight className="h-4 w-4" />
+            {t("dash.viewPricing")} <ArrowRight className="h-4 w-4" />
           </a>
           <a
             href="mailto:abhishek2k1985@gmail.com?subject=Feature Request — Geenie AI Studio"
             className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-medium transition hover:bg-surface-elevated active:scale-[0.98]"
           >
-            Request a feature
+            {t("dash.requestFeature")}
           </a>
         </div>
       </motion.div>
