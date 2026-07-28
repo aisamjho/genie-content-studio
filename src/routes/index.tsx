@@ -60,7 +60,7 @@ const studios = [
   {
     icon: Sparkles,
     name: "Anime Style",
-    desc: "Convert any photo to Ghibli, Naruto, Demon Slayer, Chibi anime art — free.",
+    desc: "Generate Ghibli, Naruto, Demon Slayer, Chibi anime art from a text description — free.",
   },
   {
     icon: Palette,
@@ -548,9 +548,9 @@ function LandingPage() {
               initials: "AR",
             },
             {
-              q: "Our team ships campaigns 5x faster. The brand kit is a game changer.",
+              q: "I made my first Reel in under 5 minutes. The cinematic filters look so professional.",
               n: "Marcus L.",
-              r: "Marketing lead",
+              r: "Content creator",
               initials: "ML",
             },
             {
