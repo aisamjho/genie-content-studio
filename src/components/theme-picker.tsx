@@ -1,9 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Palette } from "lucide-react";
 import { THEMES, saveTheme, getCurrentThemeId } from "@/lib/themes";
 
 export function ThemePicker() {
-  const [currentId, setCurrentId] = useState(getCurrentThemeId);
+  // Must NOT call getCurrentThemeId() directly as the useState initialiser —
+  // TanStack Start SSR runs component bodies on the server where localStorage
+  // doesn't exist. Using "default" as the server-side starting value and
+  // syncing to the real stored value in useEffect is the safe pattern.
+  const [currentId, setCurrentId] = useState("default");
+
+  useEffect(() => {
+    setCurrentId(getCurrentThemeId());
+  }, []);
   const [open, setOpen] = useState(false);
 
   function pick(theme: typeof THEMES[0]) {

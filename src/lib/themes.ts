@@ -100,6 +100,7 @@ export const THEMES: Theme[] = [
 ];
 
 export function applyTheme(theme: Theme) {
+  if (typeof document === "undefined") return;
   const root = document.documentElement;
   root.style.setProperty("--violet", theme.violet);
   root.style.setProperty("--magenta", theme.magenta);

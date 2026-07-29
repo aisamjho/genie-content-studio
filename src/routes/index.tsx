@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { getUser } from "@/lib/auth";
 import { useLanguage } from "@/lib/i18n";
+import { THEMES, applyTheme } from "@/lib/themes";
 import {
   Image as ImageIcon,
   Film,
@@ -24,7 +25,7 @@ import {
 } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export const Route = createFileRoute("/")(({
   head: () => ({
@@ -375,6 +376,55 @@ function LandingPage() {
               </div>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Theme showcase — interactive preview that actually changes the page
+          colours live so visitors immediately see the value of the feature
+          before they even sign up. Resets to default on section leave. */}
+      <section className="mx-auto max-w-6xl px-4 py-16">
+        <div className="glass rounded-3xl p-8 md:p-12">
+          <div className="text-center mb-8">
+            <p className="text-sm font-medium mb-2" style={{ color: "var(--magenta)" }}>🎨 Make it yours</p>
+            <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">8 themes. Your vibe.</h2>
+            <p className="mt-3 text-muted-foreground">Hover a theme to preview it live — right here on this page.</p>
+          </div>
+          <div className="grid grid-cols-4 gap-3 md:grid-cols-8">
+            {THEMES.map((theme) => (
+              <motion.button
+                key={theme.id}
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.95 }}
+                onMouseEnter={() => { if (typeof document !== "undefined") applyTheme(theme); }}
+                onMouseLeave={() => {
+                  if (typeof document !== "undefined") {
+                    const saved = typeof window !== "undefined" ? localStorage.getItem("geenie_theme") : null;
+                    const savedTheme = THEMES.find((t) => t.id === (saved ?? "default")) ?? THEMES[0];
+                    applyTheme(savedTheme);
+                  }
+                }}
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem("geenie_theme", theme.id);
+                    applyTheme(theme);
+                  }
+                }}
+                className="flex flex-col items-center gap-2 rounded-2xl p-3 transition hover:bg-surface-elevated"
+              >
+                <div
+                  className="h-10 w-10 rounded-full shadow-lg ring-2 ring-white/20"
+                  style={{ background: theme.gradient }}
+                />
+                <span className="text-[11px] font-medium text-muted-foreground">{theme.emoji} {theme.name}</span>
+              </motion.button>
+            ))}
+          </div>
+          <div className="mt-8 flex justify-center">
+            <div className="rounded-2xl p-5 text-center max-w-md" style={{ background: "var(--gradient-brand)" }}>
+              <p className="text-white font-semibold text-sm">Colour theme applies across the entire app</p>
+              <p className="text-white/80 text-xs mt-1">Every button, gradient and accent — instantly, no reload needed.</p>
+            </div>
+          </div>
         </div>
       </section>
 
