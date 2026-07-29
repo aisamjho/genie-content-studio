@@ -934,10 +934,12 @@ function PhotoEditor() {
               <div className="rounded-2xl overflow-hidden bg-black/10 flex items-center justify-center min-h-[280px] relative">
                 {chromaticAb ? (
                   <div className="relative" style={{ transform: transformStyle }}>
-                    <img src={imageSrc} alt="rgb-red" style={{ filter: `${filterStyle} sepia(1) saturate(6) hue-rotate(-50deg) brightness(1.15)`, maxHeight: "480px" }}
-                      className="absolute inset-0 max-w-full object-contain" style={{ mixBlendMode: "screen", transform: `translateX(-${chromaticAmount}px)`, maxHeight: "480px" }} />
-                    <img src={imageSrc} alt="rgb-cyan" style={{ filter: `${filterStyle} sepia(1) saturate(6) hue-rotate(140deg) brightness(1.15)`, maxHeight: "480px" }}
-                      className="absolute inset-0 max-w-full object-contain" style={{ mixBlendMode: "screen", transform: `translateX(${chromaticAmount}px)`, maxHeight: "480px" }} />
+                    <img src={imageSrc} alt="rgb-red"
+                      style={{ filter: `${filterStyle} sepia(1) saturate(6) hue-rotate(-50deg) brightness(1.15)`, maxHeight: "480px", mixBlendMode: "screen" as const, transform: `translateX(-${chromaticAmount}px)` }}
+                      className="absolute inset-0 max-w-full object-contain" />
+                    <img src={imageSrc} alt="rgb-cyan"
+                      style={{ filter: `${filterStyle} sepia(1) saturate(6) hue-rotate(140deg) brightness(1.15)`, maxHeight: "480px", mixBlendMode: "screen" as const, transform: `translateX(${chromaticAmount}px)` }}
+                      className="absolute inset-0 max-w-full object-contain" />
                     <img src={imageSrc} alt="rgb-base" style={{ filter: filterStyle, maxHeight: "480px" }} className="relative max-w-full object-contain opacity-90" />
                   </div>
                 ) : previewImg}
@@ -945,6 +947,7 @@ function PhotoEditor() {
                   vignette={vignette} lightLeak={lightLeak} leakCorner={leakCorner}
                   filmGrain={filmGrain} noiseTileUrl={noiseTileUrl} grainIntensity={grainIntensity}
                   cinematicBars={cinematicBars}
+                  dualToneOn={dualToneOn} dualShadow={dualShadow} dualHighlight={dualHighlight} dualIntensity={dualIntensity}
                 />
               </div>
             )}

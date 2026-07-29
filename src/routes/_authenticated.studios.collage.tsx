@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion } from "motion/react";
 import { Upload, Download, LayoutGrid, Trash2, RefreshCw, AlertCircle } from "lucide-react";
 

@@ -168,8 +168,13 @@ function CartoonStudio() {
       canvas.height = img.height;
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("Canvas context unavailable");
+      // TypeScript doesn't track that the early throws above guarantee
+      // non-null in the closure below — these non-null assertions make
+      // it explicit without changing runtime behaviour.
+      const safeCanvas = canvas as HTMLCanvasElement;
+      const safeCtx = ctx as CanvasRenderingContext2D;
 
-      const stream = (canvas as any).captureStream(30) as MediaStream;
+      const stream = (safeCanvas as any).captureStream(30) as MediaStream;
       const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
         ? "video/webm;codecs=vp9"
         : "video/webm";
@@ -179,7 +184,7 @@ function CartoonStudio() {
       const finished = new Promise<void>((resolve) => { recorder.onstop = () => resolve(); });
 
       const DURATION_MS = 4000;
-      const coverScale = Math.max(canvas.width / img.width, canvas.height / img.height);
+      const coverScale = Math.max(safeCanvas.width / img.width, safeCanvas.height / img.height);
       const startTime = performance.now();
 
       recorder.start();
@@ -190,10 +195,10 @@ function CartoonStudio() {
           const scale = coverScale * (1 + 0.15 * t);
           const dw = img.width * scale;
           const dh = img.height * scale;
-          const dx = (canvas.width - dw) / 2 - t * canvas.width * 0.04;
-          const dy = (canvas.height - dh) / 2 - t * canvas.height * 0.02;
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, dx, dy, dw, dh);
+          const dx = (safeCanvas.width - dw) / 2 - t * safeCanvas.width * 0.04;
+          const dy = (safeCanvas.height - dh) / 2 - t * safeCanvas.height * 0.02;
+          safeCtx.clearRect(0, 0, safeCanvas.width, safeCanvas.height);
+          safeCtx.drawImage(img, dx, dy, dw, dh);
           setAnimateProgress(t * 100);
           if (t < 1) {
             requestAnimationFrame(frame);

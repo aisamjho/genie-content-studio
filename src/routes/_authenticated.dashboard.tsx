@@ -5,7 +5,7 @@ import { useLanguage } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 import { AdSlot } from "@/components/ad-slot";
 import {
-  Image as ImageIcon, Video, Sparkles, Palette, Layers,
+  Image as ImageIcon, Video, Sparkles, Palette, Layers, LayoutGrid,
   ArrowRight, Zap, TrendingUp, Bookmark, Crown,
 } from "lucide-react";
 
