@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPingRouteImport } from './routes/api/ping'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedStudiosVideoEditorRouteImport } from './routes/_authenticated.studios.video-editor'
 import { Route as AuthenticatedStudiosPhotoRouteImport } from './routes/_authenticated.studios.photo'
@@ -56,6 +57,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPingRoute = ApiPingRouteImport.update({
+  id: '/api/ping',
+  path: '/api/ping',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/api/ping': typeof ApiPingRoute
   '/studios/anime': typeof AuthenticatedStudiosAnimeRoute
   '/studios/carousel': typeof AuthenticatedStudiosCarouselRoute
   '/studios/cartoon': typeof AuthenticatedStudiosCartoonRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/api/ping': typeof ApiPingRoute
   '/studios/anime': typeof AuthenticatedStudiosAnimeRoute
   '/studios/carousel': typeof AuthenticatedStudiosCarouselRoute
   '/studios/cartoon': typeof AuthenticatedStudiosCartoonRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/api/ping': typeof ApiPingRoute
   '/_authenticated/studios/anime': typeof AuthenticatedStudiosAnimeRoute
   '/_authenticated/studios/carousel': typeof AuthenticatedStudiosCarouselRoute
   '/_authenticated/studios/cartoon': typeof AuthenticatedStudiosCartoonRoute
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/dashboard'
+    | '/api/ping'
     | '/studios/anime'
     | '/studios/carousel'
     | '/studios/cartoon'
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/dashboard'
+    | '/api/ping'
     | '/studios/anime'
     | '/studios/carousel'
     | '/studios/cartoon'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/_authenticated/dashboard'
+    | '/api/ping'
     | '/_authenticated/studios/anime'
     | '/_authenticated/studios/carousel'
     | '/_authenticated/studios/cartoon'
@@ -204,6 +216,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
+  ApiPingRoute: typeof ApiPingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -255,6 +268,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ping': {
+      id: '/api/ping'
+      path: '/api/ping'
+      fullPath: '/api/ping'
+      preLoaderRoute: typeof ApiPingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/dashboard': {
@@ -341,6 +361,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
+  ApiPingRoute: ApiPingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

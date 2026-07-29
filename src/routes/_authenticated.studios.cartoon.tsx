@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { motion } from "motion/react";
+import { supabase as supabaseClient } from "@/lib/supabase";
 import { Download, Sparkles, RefreshCw, Dice5, Film } from "lucide-react";
 
 /** Feature-detects whether this browser can record a canvas as video —
@@ -90,6 +91,10 @@ function CartoonStudio() {
       const newCount = usedCount + 1;
       localStorage.setItem("geenie_cartoon_count", String(newCount));
       setUsedCount(newCount);
+      // Sync to Supabase so count survives device changes
+      supabaseClient.auth.getUser().then(({ data: { user } }) => {
+        if (user) supabaseClient.rpc("increment_count", { user_id: user.id, field_name: "cartoon_count" });
+      }).catch(() => {});
     }
 
     // Overrides let Surprise Me set state and generate in the same click —

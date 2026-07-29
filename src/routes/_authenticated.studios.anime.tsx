@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { motion } from "motion/react";
+import { supabase as supabaseClient } from "@/lib/supabase";
 import { Download, Sparkles, RefreshCw, AlertCircle, Dice5 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/studios/anime")({
@@ -66,6 +67,11 @@ function AnimeStudio() {
       const newCount = usedCount + 1;
       localStorage.setItem("geenie_anime_count", String(newCount));
       setUsedCount(newCount);
+      // Sync to Supabase so count survives device changes — fire and forget,
+      // the localStorage increment above is the immediate source of truth for UI
+      supabaseClient.auth.getUser().then(({ data: { user } }) => {
+        if (user) supabaseClient.rpc("increment_count", { user_id: user.id, field_name: "anime_count" });
+      }).catch(() => {});
     }
 
     // Track this request so a stale in-flight request (from a previous
