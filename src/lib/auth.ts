@@ -87,6 +87,12 @@ export async function signUp(
     return { success: false, error: "Sign up failed. Please try again." };
   }
 
+  // If Supabase has email confirmation enabled, session will be null
+  // and the user needs to verify their email before signing in.
+  if (!data.session) {
+    return { success: false, error: "CHECK_EMAIL" };
+  }
+
   const user: User = {
     id: data.user.id,
     email: data.user.email!,

@@ -40,7 +40,12 @@ function AuthPage() {
           : await signIn(email, password);
 
       if (!result.success) {
-        toast.error(result.error);
+        if (result.error === "CHECK_EMAIL") {
+          toast.success("Account created! Check your email and click the confirmation link, then sign in.");
+          setMode("signin");
+        } else {
+          toast.error(result.error);
+        }
         return;
       }
 
