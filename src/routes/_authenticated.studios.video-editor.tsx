@@ -218,8 +218,14 @@ function VideoEditor() {
     const startTime = (trimStart / 100) * duration;
     const endTime = (trimEnd / 100) * duration;
 
-    const isStudio = plan === "studio";
-    const isPaid = plan === "creator" || plan === "studio";
+    // Read plan fresh from localStorage at export time — not from the
+    // component state captured at render. This means upgrading mid-session
+    // takes effect on the very next export without a page reload.
+    const livePlan = typeof window !== "undefined"
+      ? (localStorage.getItem("geenie_plan") ?? "starter")
+      : plan;
+    const isStudio = livePlan === "studio";
+    const isPaid = livePlan === "creator" || livePlan === "studio";
     const nativeW = video.videoWidth || 720;
     const nativeH = video.videoHeight || 1280;
     // Three real tiers, not two: free is capped at 720p-equivalent, Creator
@@ -373,8 +379,13 @@ function VideoEditor() {
       if (!isPaid) {
         ctx.font = `bold ${Math.max(12, canvas.width / 32)}px sans-serif`;
         ctx.textAlign = "left";
-        ctx.fillStyle = "rgba(255,255,255,0.55)";
+        ctx.textBaseline = "alphabetic";
+        ctx.shadowColor = "rgba(0,0,0,0.6)";
+        ctx.shadowBlur = 4;
+        ctx.fillStyle = "rgba(255,255,255,0.75)";
         ctx.fillText("Made with Geenie AI", canvas.width * 0.02, canvas.height - canvas.height * 0.02);
+        ctx.shadowColor = "transparent";
+        ctx.shadowBlur = 0;
       }
 
       const pct = ((video.currentTime - startTime) / Math.max(0.001, endTime - startTime)) * 100;

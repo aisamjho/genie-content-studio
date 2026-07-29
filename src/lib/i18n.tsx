@@ -42,7 +42,7 @@ const en: Dict = {
   "nav.language": "Language",
 
   "dash.hey": "Hey",
-  "dash.subtitle": "All 5 studios are ready. Pick one below and start creating.",
+  "dash.subtitle": "All 6 studios are ready. Pick one below and start creating.",
   "dash.yourPlan": "Your Plan",
   "dash.upgrade": "Upgrade",
   "dash.yourStudios": "Your Studios",
@@ -183,7 +183,7 @@ const fr: Dict = {
   "nav.language": "Langue",
 
   "dash.hey": "Salut",
-  "dash.subtitle": "Les 5 studios sont prêts. Choisissez-en un ci-dessous pour commencer à créer.",
+  "dash.subtitle": "Les 6 studios sont prêts. Choisissez-en un ci-dessous pour commencer à créer.",
   "dash.yourPlan": "Votre Forfait",
   "dash.upgrade": "Passer au forfait supérieur",
   "dash.yourStudios": "Vos Studios",

@@ -71,7 +71,7 @@ function CartoonStudio() {
   }, []);
 
   const isPaid = plan === "creator" || plan === "studio";
-  const remaining = 5 - usedCount;
+  const remaining = Math.max(0, 5 - usedCount);
 
   function generate(styleOverride?: typeof STYLES[0], descOverride?: string) {
     if (!isPaid && usedCount >= 5) {

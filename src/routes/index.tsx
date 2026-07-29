@@ -16,6 +16,7 @@ import {
   Music,
   Sparkles,
   Layers,
+  LayoutGrid,
   ArrowRight,
   Check,
   Zap,
@@ -73,6 +74,11 @@ const studios = [
     name: "Carousel Maker",
     desc: "Multi-slide Instagram carousels — quotes, tips lists, before/after posts.",
   },
+  {
+    icon: LayoutGrid,
+    name: "Collage Maker",
+    desc: "Multi-photo grid layouts for Instagram, Stories and mood boards — 6 templates.",
+  },
 ];
 
 const plans = [
@@ -84,6 +90,8 @@ const plans = [
     features: [
       "✅ Photo Editor — full access",
       "✅ Video Editor — full access",
+      "✅ Carousel Maker — full access",
+      "✅ Collage Maker — full access",
       "⚡ Anime Style — 5 generations only",
       "⚡ Cartoon & Comic — 5 generations only",
       "⚠️ Photo downloads have watermark",
@@ -283,7 +291,7 @@ function LandingPage() {
             className="mx-auto inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface/60 px-4 py-1.5 text-xs text-muted-foreground backdrop-blur"
           >
             <Sparkles className="h-3.5 w-3.5" style={{ color: "var(--magenta)" }} />
-            5 AI studios · One subscription · Zero complexity
+            6 AI studios · One subscription · Zero complexity
           </motion.div>
 
           <motion.h1
@@ -312,7 +320,7 @@ function LandingPage() {
             className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground"
           >
             <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5" style={{ color: "var(--magenta)" }} />No card required</span>
-            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5" style={{ color: "var(--magenta)" }} />5 AI studios, one login</span>
+            <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5" style={{ color: "var(--magenta)" }} />6 AI studios, one login</span>
             <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5" style={{ color: "var(--magenta)" }} />Your files stay on your device</span>
           </motion.div>
 
@@ -432,7 +440,7 @@ function LandingPage() {
       <section id="features" className="mx-auto max-w-6xl px-4" style={{ scrollMarginTop: "96px" }}>
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-medium" style={{ color: "var(--magenta)" }}>
-            5 AI studios. One workspace.
+            6 AI studios. One workspace.
           </p>
           <h2 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
             Everything you need to ship content.

@@ -124,11 +124,20 @@ function CollageMaker() {
   const [borderSize, setBorderSize] = useState(8);
   const [borderColor, setBorderColor] = useState("#ffffff");
   const [activeFilter, setActiveFilter] = useState(FILTERS[0]);
-  const [plan] = useState(() => typeof window !== "undefined" ? localStorage.getItem("geenie_plan") ?? "starter" : "starter");
+  const [plan, setPlan] = useState("starter");
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRefs = useRef<(HTMLInputElement | null)[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Read plan from localStorage in useEffect (SSR-safe, reactive to upgrades)
+  // Previously this was a lazy useState — meaning if a user upgraded mid-session
+  // the watermark would persist until page reload.
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setPlan(localStorage.getItem("geenie_plan") ?? "starter");
+    }
+  }, []);
 
   const isPaid = plan === "creator" || plan === "studio";
   const size = SIZES[ratio];

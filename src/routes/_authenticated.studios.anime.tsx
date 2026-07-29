@@ -51,7 +51,7 @@ function AnimeStudio() {
   }, []);
 
   const isPaid = plan === "creator" || plan === "studio";
-  const remaining = 5 - usedCount;
+  const remaining = Math.max(0, 5 - usedCount);
 
   function convert(styleOverride?: typeof animeStyles[0], subjectOverride?: string) {
     if (!isPaid && usedCount >= 5) {

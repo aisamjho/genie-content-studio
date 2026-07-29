@@ -736,10 +736,16 @@ function PhotoEditor() {
       if (!isAI && !isBgTab && cinematicBars) drawCinematicBars(ctx, canvas.width, canvas.height);
 
       if (!isPaid && !isAI) {
-        ctx.font = `bold ${Math.max(14, canvas.width / 40)}px sans-serif`;
-        ctx.fillStyle = "rgba(255,255,255,0.6)";
+        const wmSize = Math.max(14, canvas.width / 40);
+        ctx.font = `bold ${wmSize}px sans-serif`;
         ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
+        ctx.shadowColor = "rgba(0,0,0,0.55)";
+        ctx.shadowBlur = 4;
+        ctx.fillStyle = "rgba(255,255,255,0.75)";
         ctx.fillText("Made with Geenie AI", 12, canvas.height - 12);
+        ctx.shadowColor = "transparent";
+        ctx.shadowBlur = 0;
       }
 
       const dataUrl = canvas.toDataURL("image/png");

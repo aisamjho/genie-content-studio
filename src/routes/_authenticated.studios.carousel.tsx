@@ -216,10 +216,13 @@ function CarouselStudio() {
         if (!isPaid) {
           ctx.font = `500 ${Math.round(size.w / 45)}px sans-serif`;
           ctx.textAlign = "left";
-          ctx.fillStyle = textColor;
-          ctx.globalAlpha = 0.55;
-          ctx.fillText("Made with Geenie AI", padding * 0.6, size.h - padding * 0.5);
+          ctx.shadowColor = "rgba(0,0,0,0.6)";
+          ctx.shadowBlur = 4;
+          ctx.fillStyle = "rgba(255,255,255,0.75)";
           ctx.globalAlpha = 1;
+          ctx.fillText("Made with Geenie AI", padding * 0.6, size.h - padding * 0.5);
+          ctx.shadowColor = "transparent";
+          ctx.shadowBlur = 0;
         }
         resolve(canvas.toDataURL("image/png"));
       };
@@ -236,7 +239,13 @@ function CarouselStudio() {
       } else if ((sl.bgType === "image" || sl.bgType === "ai") && sl.imageUrl) {
         const img = new window.Image();
         img.crossOrigin = "anonymous";
+        // Timeout so a broken/slow AI background URL never hangs the export
+        const imgTimeout = setTimeout(() => {
+          img.src = "";
+          reject(new Error("Background image took too long to load"));
+        }, 12000);
         img.onload = () => {
+          clearTimeout(imgTimeout);
           // cover-fit
           const scale = Math.max(size.w / img.width, size.h / img.height);
           const dw = img.width * scale, dh = img.height * scale;
@@ -246,7 +255,7 @@ function CarouselStudio() {
           ctx.fillRect(0, 0, size.w, size.h);
           drawTextAndFinish();
         };
-        img.onerror = () => reject(new Error("Failed to load background image"));
+        img.onerror = () => { clearTimeout(imgTimeout); reject(new Error("Failed to load background image")); };
         img.src = sl.imageUrl;
       } else {
         ctx.fillStyle = "#1a1a2e";
