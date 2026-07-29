@@ -136,6 +136,9 @@ function CollageMaker() {
   function switchLayout(l: Layout) {
     setLayout(l);
     setImages(Array(l.slots.length).fill(null));
+    // Clear all file input values so re-clicking a cell after a layout
+    // switch doesn't retain the previously selected file.
+    fileRefs.current.forEach((ref) => { if (ref) ref.value = ""; });
     fileRefs.current = [];
   }
 
@@ -222,11 +225,18 @@ function CollageMaker() {
       }
 
       if (!isPaid) {
-        ctx.font = `bold ${Math.round(size.w / 40)}px sans-serif`;
-        ctx.fillStyle = "rgba(255,255,255,0.6)";
+        const wm = "Made with Geenie AI";
+        const wmSize = Math.round(size.w / 45);
+        ctx.font = `bold ${wmSize}px sans-serif`;
         ctx.textAlign = "left";
         ctx.textBaseline = "alphabetic";
-        ctx.fillText("Made with Geenie AI", outerPad + 8, size.h - outerPad - 8);
+        // Shadow for legibility on any background
+        ctx.shadowColor = "rgba(0,0,0,0.5)";
+        ctx.shadowBlur = 4;
+        ctx.fillStyle = "rgba(255,255,255,0.75)";
+        ctx.fillText(wm, outerPad + 8, size.h - outerPad - 8);
+        ctx.shadowColor = "transparent";
+        ctx.shadowBlur = 0;
       }
 
       const dataUrl = canvas.toDataURL("image/png");
@@ -327,7 +337,7 @@ function CollageMaker() {
             <motion.button whileTap={{ scale: 0.97 }} onClick={downloadCollage} disabled={downloading || filledCount === 0}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50 transition" style={grad}>
               <Download className="h-4 w-4" />
-              {downloading ? "Exporting..." : isPaid ? `Download HD (${filledCount}/${layout.slots.length} photos)` : `Download (watermarked)`}
+              {downloading ? "Exporting..." : filledCount === 0 ? "Upload photos first" : filledCount < layout.slots.length ? `Download (${filledCount}/${layout.slots.length} photos)` : isPaid ? "Download HD" : "Download (watermarked)"}
             </motion.button>
           </div>
           {!isPaid && <p className="text-[11px] text-center text-muted-foreground">Free plan adds a small watermark · <a href="/#pricing" className="text-orange-500 font-medium hover:underline">Upgrade to remove →</a></p>}

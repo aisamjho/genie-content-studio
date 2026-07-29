@@ -193,29 +193,35 @@ function applyDualTone(
   intensity: number, // 0-100
 ) {
   if (intensity <= 0) return;
-  const parseHex = (hex: string) => {
-    const n = parseInt(hex.replace("#", ""), 16);
+  if (w <= 0 || h <= 0) return;
+  const parseHex = (hex: string): [number, number, number] => {
+    const cleaned = hex.replace("#", "");
+    // Expand 3-digit hex to 6-digit
+    const full = cleaned.length === 3
+      ? cleaned.split("").map((c) => c + c).join("")
+      : cleaned;
+    const n = parseInt(full, 16);
+    if (isNaN(n)) return [0, 0, 0];
     return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
   };
   const [sr, sg, sb] = parseHex(shadowHex);
   const [hr, hg, hb] = parseHex(highlightHex);
-  const data = ctx.getImageData(0, 0, w, h);
-  const buf = data.data;
-  const mix = intensity / 100;
-  for (let i = 0; i < buf.length; i += 4) {
-    // Perceived luminance (0-255)
-    const lum = 0.299 * buf[i] + 0.587 * buf[i + 1] + 0.114 * buf[i + 2];
-    const t = lum / 255;
-    // Gradient map colour at this luminance
-    const mr = sr + (hr - sr) * t;
-    const mg = sg + (hg - sg) * t;
-    const mb = sb + (hb - sb) * t;
-    // Blend with original pixel using the intensity slider
-    buf[i]     = Math.round(buf[i]     * (1 - mix) + mr * mix);
-    buf[i + 1] = Math.round(buf[i + 1] * (1 - mix) + mg * mix);
-    buf[i + 2] = Math.round(buf[i + 2] * (1 - mix) + mb * mix);
+  try {
+    const data = ctx.getImageData(0, 0, w, h);
+    const buf = data.data;
+    const mix = intensity / 100;
+    for (let i = 0; i < buf.length; i += 4) {
+      const lum = 0.299 * buf[i] + 0.587 * buf[i + 1] + 0.114 * buf[i + 2];
+      const t = lum / 255;
+      buf[i]     = Math.round(buf[i]     * (1 - mix) + (sr + (hr - sr) * t) * mix);
+      buf[i + 1] = Math.round(buf[i + 1] * (1 - mix) + (sg + (hg - sg) * t) * mix);
+      buf[i + 2] = Math.round(buf[i + 2] * (1 - mix) + (sb + (hb - sb) * t) * mix);
+    }
+    ctx.putImageData(data, 0, 0);
+  } catch {
+    // getImageData fails on tainted canvas (cross-origin without CORS) —
+    // fail silently rather than crashing the whole download flow
   }
-  ctx.putImageData(data, 0, 0);
 }
 
 /** Converts one of the simple two-color linear-gradient() strings used in
@@ -661,6 +667,19 @@ function PhotoEditor() {
         ctx.filter = filterStyle;
         ctx.drawImage(img, dx, dy, dw, dh);
         ctx.restore();
+
+        // Apply pixel-level effects to the inset photo area only —
+        // clip to the photo bounds first so effects don't spill onto the
+        // background, then restore the full canvas context.
+        if (dualToneOn || chromaticAb) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(dx, dy, dw, dh);
+          ctx.clip();
+          if (chromaticAb) applyChromaticAberration(ctx, canvas.width, canvas.height, chromaticAmount);
+          if (dualToneOn) applyDualTone(ctx, canvas.width, canvas.height, dualShadow, dualHighlight, dualIntensity);
+          ctx.restore();
+        }
       } else {
         const r = rotation % 180 !== 0;
         canvas.width = r ? img.height : img.width;
