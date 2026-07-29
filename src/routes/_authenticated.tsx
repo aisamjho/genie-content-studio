@@ -10,6 +10,7 @@ import { useState } from "react";
 import { signOut, getUser, useAuth } from "@/lib/auth";
 import { useLanguage } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemePicker } from "@/components/theme-picker";
 import { toast } from "sonner";
 import {
   Sparkles,
@@ -106,8 +107,9 @@ function AuthenticatedLayout() {
         </NavGroup>
       </nav>
 
-      {/* Language switcher */}
-      <div className="border-t border-border/40 p-3">
+      {/* Theme + Language switchers */}
+      <div className="border-t border-border/40 p-3 flex flex-col gap-2">
+        <ThemePicker />
         <LanguageSwitcher />
       </div>
 

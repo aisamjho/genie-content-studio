@@ -13,6 +13,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { useEffect, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { LanguageProvider } from "@/lib/i18n";
+import { loadSavedTheme } from "@/lib/themes";
 
 function NotFoundPage() {
   return (
@@ -132,6 +133,7 @@ function RootComponent() {
     }
 
     setIsOffline(!navigator.onLine);
+    loadSavedTheme();
     const goOffline = () => setIsOffline(true);
     const goOnline = () => setIsOffline(false);
     window.addEventListener("offline", goOffline);
