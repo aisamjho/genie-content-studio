@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { LanguageProvider } from "@/lib/i18n";
 import { loadSavedTheme } from "@/lib/themes";
+import { Analytics } from "@vercel/analytics/react";
 
 function NotFoundPage() {
   return (
@@ -164,6 +165,7 @@ function RootComponent() {
             },
           }}
         />
+        <Analytics />
       </LanguageProvider>
     </QueryClientProvider>
   );

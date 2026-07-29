@@ -20,7 +20,7 @@ function TermsPage() {
       <main className="mx-auto max-w-3xl px-4 pt-28 pb-16">
         <p className="text-sm font-medium" style={{ color: "var(--magenta)" }}>Legal</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">Terms of Service</h1>
-        <p className="mt-3 text-sm text-muted-foreground">Last updated: 9 July 2026</p>
+        <p className="mt-3 text-sm text-muted-foreground">Last updated: 29 July 2026</p>
 
         <div className="mt-10 space-y-8 text-sm text-muted-foreground leading-relaxed">
           <Section title="1. Acceptance">
