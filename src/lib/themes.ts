@@ -108,6 +108,8 @@ export function applyTheme(theme: Theme) {
   root.style.setProperty("--primary", theme.violet);
   root.style.setProperty("--accent", theme.accent);
   root.style.setProperty("--accent-foreground", theme.accentFg);
+  // Auth page hero background uses this — keep it in sync with the theme
+  root.style.setProperty("--gradient-hero", `linear-gradient(160deg, #fff 0%, ${theme.accent} 60%, #f5f0ff 100%)`);
 }
 
 export function loadSavedTheme() {

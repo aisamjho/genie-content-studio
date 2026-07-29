@@ -44,6 +44,7 @@
   --violet: #ff5a1f;
   --magenta: #f7277e;
   --gradient-brand: linear-gradient(135deg, #ff5a1f 0%, #f7277e 100%);
+  --gradient-hero: linear-gradient(160deg, #fff7f4 0%, #fff0f7 50%, #f5f0ff 100%);
 }
 
 * { box-sizing: border-box; }
