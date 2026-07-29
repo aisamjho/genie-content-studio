@@ -29,15 +29,15 @@ function AuthPage() {
     if (getUser()) navigate({ to: "/dashboard", replace: true });
   }, [navigate]);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
 
     try {
       const result =
         mode === "signup"
-          ? signUp(email, password, fullName)
-          : signIn(email, password);
+          ? await signUp(email, password, fullName)
+          : await signIn(email, password);
 
       if (!result.success) {
         toast.error(result.error);

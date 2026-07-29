@@ -53,8 +53,8 @@ function AuthenticatedLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  function handleSignOut() {
-    signOut();
+  async function handleSignOut() {
+    await signOut();
     toast.success("Signed out successfully.");
     navigate({ to: "/", replace: true });
   }
