@@ -32,6 +32,7 @@ import {
   X,
   ChevronRight,
   Layers,
+  LayoutGrid,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -98,6 +99,7 @@ function AuthenticatedLayout() {
           <NavItem to="/studios/anime" icon={Sparkles} label={t("nav.animeStyle")} pathname={pathname} onClick={() => setSidebarOpen(false)} />
           <NavItem to="/studios/cartoon" icon={Palette} label={t("nav.cartoonComic")} pathname={pathname} onClick={() => setSidebarOpen(false)} />
           <NavItem to="/studios/carousel" icon={Layers} label={t("nav.carouselMaker")} pathname={pathname} onClick={() => setSidebarOpen(false)} />
+          <NavItem to="/studios/collage" icon={LayoutGrid} label="Collage Maker" pathname={pathname} onClick={() => setSidebarOpen(false)} />
         </NavGroup>
 
         <NavGroup title="Account">

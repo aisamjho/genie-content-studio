@@ -19,7 +19,8 @@ const studios = [
   { icon: Video,     nameKey: "nav.videoEditor", desc: "Filters, movie-style effects, music, captions — download real video.", route: "/studios/video-editor" },
   { icon: Sparkles,  nameKey: "nav.animeStyle",  desc: "Generate anime art in 8 styles from a text prompt.", route: "/studios/anime", badge: "🔥 Popular" },
   { icon: Palette,   nameKey: "nav.cartoonComic", desc: "Disney, Pixar, Comics, Manga, Lego, Sticker styles.", route: "/studios/cartoon" },
-  { icon: Layers,    nameKey: "nav.carouselMaker", desc: "Multi-slide Instagram carousels — quotes, tips, before/after.", route: "/studios/carousel", badge: "✨ New" },
+  { icon: Layers,    nameKey: "nav.carouselMaker", desc: "Multi-slide Instagram carousels — quotes, tips, before/after.", route: "/studios/carousel" },
+  { icon: LayoutGrid, nameKey: "nav.collage",       desc: "Multi-photo grid layouts for Instagram, Stories and mood boards.", route: "/studios/collage", badge: "✨ New" },
 ];
 
 const PLAN_LABELS: Record<string, { label: string; color: string }> = {

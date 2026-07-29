@@ -176,6 +176,48 @@ function drawCinematicBars(ctx: CanvasRenderingContext2D, w: number, h: number) 
   ctx.fillRect(0, h - barHeight, w, barHeight);
 }
 
+/**
+ * Dual-Tone (Gradient Map) — maps each pixel's luminance to a colour
+ * between `shadowColor` (dark end) and `highlightColor` (light end).
+ * This is the technique behind the split-tone cinematic look seen
+ * everywhere on film photography accounts. Pure per-pixel canvas math,
+ * zero API, zero cost. The `intensity` param blends with the original
+ * so users can dial between "subtle mood" and "full poster look".
+ */
+function applyDualTone(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  shadowHex: string,
+  highlightHex: string,
+  intensity: number, // 0-100
+) {
+  if (intensity <= 0) return;
+  const parseHex = (hex: string) => {
+    const n = parseInt(hex.replace("#", ""), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  };
+  const [sr, sg, sb] = parseHex(shadowHex);
+  const [hr, hg, hb] = parseHex(highlightHex);
+  const data = ctx.getImageData(0, 0, w, h);
+  const buf = data.data;
+  const mix = intensity / 100;
+  for (let i = 0; i < buf.length; i += 4) {
+    // Perceived luminance (0-255)
+    const lum = 0.299 * buf[i] + 0.587 * buf[i + 1] + 0.114 * buf[i + 2];
+    const t = lum / 255;
+    // Gradient map colour at this luminance
+    const mr = sr + (hr - sr) * t;
+    const mg = sg + (hg - sg) * t;
+    const mb = sb + (hb - sb) * t;
+    // Blend with original pixel using the intensity slider
+    buf[i]     = Math.round(buf[i]     * (1 - mix) + mr * mix);
+    buf[i + 1] = Math.round(buf[i + 1] * (1 - mix) + mg * mix);
+    buf[i + 2] = Math.round(buf[i + 2] * (1 - mix) + mb * mix);
+  }
+  ctx.putImageData(data, 0, 0);
+}
+
 /** Converts one of the simple two-color linear-gradient() strings used in
  *  `bgs` into a real canvas gradient. Falls back to a flat color if the
  *  string doesn't match (never crashes the export over a cosmetic detail). */
@@ -199,7 +241,7 @@ function parseGradientForCanvas(ctx: CanvasRenderingContext2D, css: string, w: n
  *  component (not nested inside PhotoEditor) so React can diff and update
  *  it normally across re-renders instead of remounting it every time any
  *  slider or text field changes. */
-function CinematicOverlayLayer({ vignette, lightLeak, leakCorner, filmGrain, noiseTileUrl, grainIntensity, cinematicBars }: {
+function CinematicOverlayLayer({ vignette, lightLeak, leakCorner, filmGrain, noiseTileUrl, grainIntensity, cinematicBars, dualToneOn, dualShadow, dualHighlight, dualIntensity }: {
   vignette: boolean;
   lightLeak: boolean;
   leakCorner: LeakCorner;
@@ -207,9 +249,20 @@ function CinematicOverlayLayer({ vignette, lightLeak, leakCorner, filmGrain, noi
   noiseTileUrl: string | null;
   grainIntensity: number;
   cinematicBars: boolean;
+  dualToneOn: boolean;
+  dualShadow: string;
+  dualHighlight: string;
+  dualIntensity: number;
 }) {
   return (
     <>
+      {dualToneOn && (
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: `linear-gradient(to bottom, ${dualHighlight}, ${dualShadow})`,
+          opacity: (dualIntensity / 100) * 0.55,
+          mixBlendMode: "color",
+        }} />
+      )}
       {vignette && <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: "inset 0 0 80px rgba(0,0,0,0.6)" }} />}
       {lightLeak && (
         <div className="absolute inset-0 pointer-events-none" style={{
@@ -283,6 +336,20 @@ function PhotoEditor() {
   const [chromaticAmount, setChromaticAmount] = useState(4);
   const [compareMode, setCompareMode] = useState(false);
   const [comparePos, setComparePos] = useState(50);
+  // Dual-Tone (Gradient Map) — shadow/highlight colour split
+  const [dualToneOn, setDualToneOn] = useState(false);
+  const [dualShadow, setDualShadow] = useState("#1a0533");   // deep purple shadow default
+  const [dualHighlight, setDualHighlight] = useState("#ff9a5c"); // warm orange highlight default
+  const [dualIntensity, setDualIntensity] = useState(60);
+  // Quick dual-tone presets — named looks that resonate with creators
+  const DUAL_PRESETS = [
+    { name: "Cyberpunk", shadow: "#0d0221", highlight: "#00f5ff" },
+    { name: "Golden Film", shadow: "#1a0a00", highlight: "#ffd700" },
+    { name: "Rose Quartz", shadow: "#2d0a1e", highlight: "#ffb7c5" },
+    { name: "Teal & Orange", shadow: "#003333", highlight: "#ff6b35" },
+    { name: "Arctic", shadow: "#001233", highlight: "#90e0ef" },
+    { name: "Moody", shadow: "#0a0a0a", highlight: "#8b7355" },
+  ];
   const [presets, setPresets] = useState<Preset[]>([]);
   const [presetNameInput, setPresetNameInput] = useState("");
   const [plan, setPlan] = useState("starter");
@@ -343,7 +410,7 @@ function PhotoEditor() {
   const warmthFilter = warmth !== 0 ? `hue-rotate(${warmth < 0 ? warmth : 0}deg) sepia(${warmth > 0 ? (warmth / 100) * 0.4 : 0})` : "";
   const filterStyle = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px) ${activeFilter.css} ${warmthFilter}`;
   const transformStyle = `rotate(${rotation}deg) scaleX(${flipH ? -1 : 1})`;
-  const hasCinematicFx = cinematicBars || filmGrain || lightLeak || chromaticAb;
+  const hasCinematicFx = cinematicBars || filmGrain || lightLeak || chromaticAb || dualToneOn;
 
   function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -359,6 +426,7 @@ function PhotoEditor() {
     setVignette(false); setFlipH(false);
     setActiveFilter(filters[0]); setRotation(0); setTextOverlay(""); setStickers([]);
     setCinematicBars(false); setFilmGrain(false); setLightLeak(false); setChromaticAb(false);
+    setDualToneOn(false); setDualIntensity(60);
   }
 
   function addSticker(emoji: string) {
@@ -608,6 +676,7 @@ function PhotoEditor() {
 
         if (!isAI) {
           if (chromaticAb) applyChromaticAberration(ctx, canvas.width, canvas.height, chromaticAmount);
+          if (dualToneOn) applyDualTone(ctx, canvas.width, canvas.height, dualShadow, dualHighlight, dualIntensity);
           if (vignette) drawVignette(ctx, canvas.width, canvas.height);
           if (lightLeak) drawLightLeak(ctx, canvas.width, canvas.height, leakCorner);
           if (filmGrain) drawFilmGrain(ctx, canvas.width, canvas.height, grainIntensity);
@@ -740,6 +809,7 @@ function PhotoEditor() {
                 vignette={vignette} lightLeak={lightLeak} leakCorner={leakCorner}
                 filmGrain={filmGrain} noiseTileUrl={noiseTileUrl} grainIntensity={grainIntensity}
                 cinematicBars={cinematicBars}
+                dualToneOn={dualToneOn} dualShadow={dualShadow} dualHighlight={dualHighlight} dualIntensity={dualIntensity}
               />
             </div>
             {(textOverlay || stickers.length > 0) && (
@@ -913,6 +983,49 @@ function PhotoEditor() {
               <p className="text-[11px] text-muted-foreground">Retro VHS-glitch color split</p>
             </div>
 
+            {/* Dual-Tone / Gradient Map */}
+            <div className="border-t border-border pt-3">
+              <label className="flex items-center gap-2 cursor-pointer mb-2">
+                <input type="checkbox" checked={dualToneOn} onChange={e => setDualToneOn(e.target.checked)} className="accent-orange-500" />
+                <span className="text-xs font-medium flex items-center gap-1">
+                  🎨 Dual-Tone
+                  <span className="text-[9px] bg-orange-100 text-orange-600 px-1 rounded">✨ New</span>
+                </span>
+              </label>
+              {dualToneOn && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-[11px] text-muted-foreground">Maps shadows → one colour, highlights → another. The split-tone cinematic look.</p>
+                  {/* Quick presets */}
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {DUAL_PRESETS.map(p => (
+                      <button key={p.name} onClick={() => { setDualShadow(p.shadow); setDualHighlight(p.highlight); }}
+                        className="rounded-lg py-1.5 text-[10px] font-medium transition text-white"
+                        style={{ background: `linear-gradient(135deg, ${p.shadow}, ${p.highlight})` }}>
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-3 items-center">
+                    <div className="flex flex-col items-center gap-1">
+                      <label className="text-[11px] text-muted-foreground">Shadows</label>
+                      <input type="color" value={dualShadow} onChange={e => setDualShadow(e.target.value)} className="h-8 w-10 rounded border border-border cursor-pointer" />
+                    </div>
+                    <div className="flex-1 h-6 rounded-lg shadow-sm" style={{ background: `linear-gradient(90deg, ${dualShadow}, ${dualHighlight})` }} />
+                    <div className="flex flex-col items-center gap-1">
+                      <label className="text-[11px] text-muted-foreground">Highlights</label>
+                      <input type="color" value={dualHighlight} onChange={e => setDualHighlight(e.target.value)} className="h-8 w-10 rounded border border-border cursor-pointer" />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[11px] text-muted-foreground mb-1">
+                      <span>Intensity</span><span>{dualIntensity}%</span>
+                    </div>
+                    <input type="range" min={10} max={100} value={dualIntensity} onChange={e => setDualIntensity(Number(e.target.value))} className="w-full accent-orange-500" />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="border-t border-border pt-3">
               <p className="text-xs font-semibold mb-2 flex items-center gap-1.5"><Bookmark className="h-3.5 w-3.5 text-orange-500" />My Presets</p>
               <div className="flex gap-1.5 mb-2">
@@ -951,6 +1064,7 @@ function PhotoEditor() {
                 vignette={vignette} lightLeak={lightLeak} leakCorner={leakCorner}
                 filmGrain={filmGrain} noiseTileUrl={noiseTileUrl} grainIntensity={grainIntensity}
                 cinematicBars={cinematicBars}
+                dualToneOn={dualToneOn} dualShadow={dualShadow} dualHighlight={dualHighlight} dualIntensity={dualIntensity}
               />
             </div>
             <button onClick={download} className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white" style={grad}><Download className="h-4 w-4" />{isPaid ? "Download HD" : "Download (watermarked)"}</button>
