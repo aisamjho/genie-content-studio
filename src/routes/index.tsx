@@ -583,50 +583,47 @@ function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* What you can create — replaces fake testimonials */}
       <section className="mx-auto mt-32 max-w-6xl px-4">
         <div className="mx-auto max-w-2xl text-center">
+          <p className="text-sm font-medium mb-3" style={{ color: "var(--magenta)" }}>What you can make</p>
           <h2 className="text-4xl font-semibold tracking-tight md:text-5xl">
-            Loved by creators.
+            One app. Every content format.
           </h2>
+          <p className="mt-4 text-muted-foreground">Everything creators need for Instagram, YouTube Shorts, and TikTok — in one place, free to start.</p>
         </div>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           {[
             {
-              q: "Geenie replaced four tools in my workflow. I just describe what I want.",
-              n: "Aisha R.",
-              r: "Content creator",
-              initials: "AR",
+              emoji: "🎬",
+              title: "Instagram Reels & YouTube Shorts",
+              desc: "Edit your video, add cinematic filters, overlay captions, mix background music, and export a real video file — all in your browser.",
             },
             {
-              q: "I made my first Reel in under 5 minutes. The cinematic filters look so professional.",
-              n: "Marcus L.",
-              r: "Content creator",
-              initials: "ML",
+              emoji: "🎨",
+              title: "Anime & Cartoon Art",
+              desc: "Describe a character and generate Studio Ghibli, Naruto, Disney Pixar, or Manga-style art in seconds. Perfect for profile pictures and story content.",
             },
             {
-              q: "The image studio alone is worth it. Cinematic edits in one click.",
-              n: "Priya S.",
-              r: "Photographer",
-              initials: "PS",
+              emoji: "🖼️",
+              title: "Photo Edits & Carousels",
+              desc: "Apply cinematic filters, dual-tone effects, AI backgrounds, and text overlays to photos. Build multi-slide Instagram carousels with one tap.",
             },
-          ].map((t) => (
-            <div key={t.n} className="glass rounded-2xl p-6">
-              <p className="text-sm leading-relaxed text-muted-foreground">"{t.q}"</p>
-              <div className="mt-5 flex items-center gap-3">
-                <div
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
-                  style={{ background: "var(--gradient-brand)" }}
-                >
-                  {t.initials}
-                </div>
-                <div>
-                  <p className="text-sm font-medium">{t.n}</p>
-                  <p className="text-xs text-muted-foreground">{t.r}</p>
-                </div>
-              </div>
+          ].map((item) => (
+            <div key={item.title} className="glass rounded-2xl p-6">
+              <span className="text-3xl">{item.emoji}</span>
+              <h3 className="mt-4 text-base font-semibold">{item.title}</h3>
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
             </div>
           ))}
+        </div>
+        <div className="mt-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            Currently in closed testing with early users.{" "}
+            <Link to="/auth" className="font-medium text-foreground hover:underline">
+              Join the waitlist →
+            </Link>
+          </p>
         </div>
       </section>
 
