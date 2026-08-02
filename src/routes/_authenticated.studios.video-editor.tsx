@@ -314,15 +314,63 @@ function VideoEditor() {
 
     recorder.start();
     video.playbackRate = speed;
+
+    // Bug fix: video.play() fails silently on mobile due to autoplay
+    // restrictions — we need to catch this and show a clear error rather
+    // than hanging forever on "Exporting..."
     try {
       if (exportMusicEl) { exportMusicEl.currentTime = 0; await exportMusicEl.play(); }
       await video.play();
-    } catch { /* autoplay restrictions — recorder still runs */ }
+    } catch {
+      recorder.stop();
+      exportMusicEl?.pause();
+      if (mixCtx) { try { await mixCtx.close(); } catch { /* already closed */ } }
+      setExportError("Could not start video playback for export. On mobile, try keeping the screen on and the app in the foreground during export.");
+      setExporting(false);
+      return;
+    }
 
     const barHeight = canvas.height * 0.09;
+    // Target frame interval based on video's native frame rate — avoids
+    // inflated file sizes from duplicate frames at 60fps display refresh
+    const TARGET_FPS = 30;
+    const FRAME_INTERVAL = 1000 / TARGET_FPS;
+    let lastFrameTime = 0;
 
-    const draw = () => {
-      if (video.paused || video.ended) return;
+    // Safety timeout — if export takes more than 3x the clip duration
+    // (or minimum 60s), something has gone wrong. Stop and report.
+    const maxDuration = Math.max(60000, (endTime - startTime) * 3000);
+    const exportTimeout = setTimeout(() => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      video.pause();
+      try { recorder.stop(); } catch { /* already stopped */ }
+      setExportError("Export timed out. Try a shorter clip or reduce the resolution by using a free account export.");
+      setExporting(false);
+    }, maxDuration);
+
+    const draw = (timestamp: number) => {
+      // Bug fix: if video stalls/pauses mid-export (buffering, memory
+      // pressure, tab switch on mobile) — don't silently exit the draw
+      // loop. Instead try to resume playback and keep the loop alive.
+      if (video.paused && !video.ended) {
+        video.play().catch(() => {});
+        rafRef.current = requestAnimationFrame(draw);
+        return;
+      }
+      if (video.ended || video.currentTime >= endTime) {
+        video.pause();
+        clearTimeout(exportTimeout);
+        recorder.stop();
+        return;
+      }
+
+      // Throttle to TARGET_FPS to avoid duplicate frames
+      if (timestamp - lastFrameTime < FRAME_INTERVAL) {
+        rafRef.current = requestAnimationFrame(draw);
+        return;
+      }
+      lastFrameTime = timestamp;
+
       ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) ${activeFilter.css}`;
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       ctx.filter = "none";
@@ -347,8 +395,6 @@ function VideoEditor() {
         ctx.save();
         ctx.globalAlpha = (grainIntensity / 100) * 0.45;
         ctx.globalCompositeOperation = "overlay";
-        // Tile the small noise canvas across the frame instead of
-        // stretching it, so the grain stays fine-grained at any resolution.
         const tile = noiseTileRef.current;
         for (let y = 0; y < canvas.height; y += tile.height) {
           for (let x = 0; x < canvas.width; x += tile.width) {
@@ -391,26 +437,21 @@ function VideoEditor() {
       const pct = ((video.currentTime - startTime) / Math.max(0.001, endTime - startTime)) * 100;
       setExportProgress(Math.min(100, Math.max(0, pct)));
 
-      if (video.currentTime >= endTime || video.ended) {
-        video.pause();
-        recorder.stop();
-        return;
-      }
       rafRef.current = requestAnimationFrame(draw);
     };
     rafRef.current = requestAnimationFrame(draw);
 
     await finished;
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    clearTimeout(exportTimeout);
 
-    // Always tear down the export-only music element and audio graph,
-    // whether the export succeeded or the blob came back empty below.
+    // Always tear down the export-only music element and audio graph
     exportMusicEl?.pause();
     if (mixCtx) { try { await mixCtx.close(); } catch { /* already closed */ } }
 
     const blob = new Blob(chunks, { type: "video/webm" });
     if (blob.size === 0) {
-      setExportError("Export produced an empty file. Please try again — this can happen if the tab was backgrounded during export.");
+      setExportError("Export produced an empty file. Keep the screen on and the app in the foreground during export. On mobile, use a shorter clip (under 30 seconds) for best results.");
       setExporting(false);
       return;
     }
@@ -584,7 +625,7 @@ function VideoEditor() {
               style={{ background: "linear-gradient(135deg,#ff5a1f,#f7277e)" }}>
               <Download className="h-4 w-4" />{exporting ? "Exporting..." : plan === "studio" ? "Export Native Resolution" : plan === "creator" ? "Export Full HD" : "Export Video (720p)"}
             </button>
-            <p className="text-[11px] text-muted-foreground text-center">Export renders in real time — a 30s clip takes about 30s (faster at higher speed)</p>
+            <p className="text-[11px] text-muted-foreground text-center">Export renders in real time — a 30s clip takes about 30s. Keep the screen on and app in foreground during export.</p>
             {plan !== "creator" && plan !== "studio" && (
               <p className="text-[11px] text-center text-orange-600 bg-orange-50 rounded-lg py-1.5 w-full">
                 Free exports are capped at 720p with a small watermark · <a href="/#pricing" className="font-medium hover:underline">Upgrade for full HD, no watermark →</a>
