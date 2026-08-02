@@ -18,6 +18,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiPingRouteImport } from './routes/api/ping'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated.account'
 import { Route as AuthenticatedStudiosVideoEditorRouteImport } from './routes/_authenticated.studios.video-editor'
 import { Route as AuthenticatedStudiosPhotoRouteImport } from './routes/_authenticated.studios.photo'
 import { Route as AuthenticatedStudiosCollageRouteImport } from './routes/_authenticated.studios.collage'
@@ -69,6 +70,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedStudiosVideoEditorRoute =
   AuthenticatedStudiosVideoEditorRouteImport.update({
     id: '/studios/video-editor',
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/account': typeof AuthenticatedAccountRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/api/ping': typeof ApiPingRoute
   '/studios/anime': typeof AuthenticatedStudiosAnimeRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/account': typeof AuthenticatedAccountRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/api/ping': typeof ApiPingRoute
   '/studios/anime': typeof AuthenticatedStudiosAnimeRoute
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
+  '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/api/ping': typeof ApiPingRoute
   '/_authenticated/studios/anime': typeof AuthenticatedStudiosAnimeRoute
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/privacy'
     | '/terms'
+    | '/account'
     | '/dashboard'
     | '/api/ping'
     | '/studios/anime'
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/privacy'
     | '/terms'
+    | '/account'
     | '/dashboard'
     | '/api/ping'
     | '/studios/anime'
@@ -198,6 +209,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/privacy'
     | '/terms'
+    | '/_authenticated/account'
     | '/_authenticated/dashboard'
     | '/api/ping'
     | '/_authenticated/studios/anime'
@@ -284,6 +296,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/account': {
+      id: '/_authenticated/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AuthenticatedAccountRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/studios/video-editor': {
       id: '/_authenticated/studios/video-editor'
       path: '/studios/video-editor'
@@ -330,6 +349,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedStudiosAnimeRoute: typeof AuthenticatedStudiosAnimeRoute
   AuthenticatedStudiosCarouselRoute: typeof AuthenticatedStudiosCarouselRoute
@@ -340,6 +360,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAccountRoute: AuthenticatedAccountRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedStudiosAnimeRoute: AuthenticatedStudiosAnimeRoute,
   AuthenticatedStudiosCarouselRoute: AuthenticatedStudiosCarouselRoute,

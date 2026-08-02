@@ -103,6 +103,7 @@ function AuthenticatedLayout() {
         </NavGroup>
 
         <NavGroup title="Account">
+          <NavItem to="/account" icon={Settings} label="Account & Billing" pathname={pathname} onClick={() => setSidebarOpen(false)} />
           <NavItem href="/#pricing" icon={CreditCard} label={t("nav.billing")} pathname={pathname} />
           
           

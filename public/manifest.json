@@ -1,7 +1,7 @@
 {
   "name": "Geenie AI Studio",
   "short_name": "Geenie",
-  "description": "Free AI photo editor, video editor for Reels & Shorts, and anime style converter. No skills needed.",
+  "description": "Free AI photo editor, video editor for Reels & Shorts, anime art generator, cartoon maker and carousel creator. No skills needed.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
