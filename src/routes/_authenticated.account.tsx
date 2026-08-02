@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth, signOut } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { useState, useEffect } from "react";
-import { CreditCard, User, Shield, Trash2, LogOut, ArrowRight, CheckCircle } from "lucide-react";
+import { CreditCard, User, Shield, Trash2, LogOut, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/account")({
@@ -121,18 +121,27 @@ function AccountPage() {
             Upgrade to Creator <ArrowRight className="h-4 w-4" />
           </a>
         ) : (
-          <div className="mt-5 rounded-xl bg-orange-50 border border-orange-200 px-4 py-3">
-            <p className="text-xs text-orange-700 font-medium flex items-start gap-2">
-              <CheckCircle className="h-4 w-4 shrink-0 mt-0.5" />
-              <span>
-                To cancel your subscription, email{" "}
-                <a href="mailto:abhishek2k1985@gmail.com?subject=Cancel subscription" className="underline font-semibold">
-                  abhishek2k1985@gmail.com
+          <div className="mt-5 space-y-3">
+              <a
+                href="https://api.razorpay.com/v1/customer-portal"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-surface border border-border px-4 py-2.5 text-sm font-medium hover:bg-surface-elevated transition"
+              >
+                Manage or cancel subscription via Razorpay →
+              </a>
+              <p className="text-xs text-muted-foreground text-center">
+                You'll be taken to Razorpay's secure portal to manage your subscription.
+                Your access continues until the end of the current billing period after cancellation.
+              </p>
+              <p className="text-xs text-muted-foreground text-center">
+                Need help?{" "}
+                <a href="mailto:abhishek2k1985@gmail.com?subject=Cancel subscription" className="underline">
+                  Email us
                 </a>{" "}
-                with the subject "Cancel subscription". We'll process it within 24 hours and your access continues until the end of the billing period.
-              </span>
-            </p>
-          </div>
+                and we'll cancel within 24 hours.
+              </p>
+            </div>
         )}
       </div>
 
