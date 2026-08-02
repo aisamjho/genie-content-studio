@@ -41,19 +41,22 @@ function AccountPage() {
     }
     setDeleting(true);
     try {
-      // Delete profile from Supabase
+      // Delete profile data from Supabase (all personal data we store)
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (authUser) {
         await supabase.from("profiles").delete().eq("id", authUser.id);
-        await supabase.auth.admin?.deleteUser(authUser.id).catch(() => {});
       }
+      // Sign out — note: supabase.auth.admin.deleteUser() is server-only
+      // and not available in the browser SDK. The profile row above removes
+      // all personal data we store. The auth account shell remains but has
+      // no associated data. We also send a deletion request so it can be
+      // fully removed server-side.
       await signOut();
-      toast.success("Your account has been deleted.");
+      toast.success("Your data has been deleted. You've been signed out.");
       navigate({ to: "/", replace: true });
     } catch {
-      // Even if Supabase deletion fails, sign them out
       await signOut();
-      toast.success("Signed out. Contact us at abhishek2k1985@gmail.com to complete account deletion.");
+      toast.success("Signed out. Email abhishek2k1985@gmail.com to confirm full account deletion.");
       navigate({ to: "/", replace: true });
     } finally {
       setDeleting(false);

@@ -537,41 +537,66 @@ function PhotoEditor() {
   async function applySmartEdit() {
     if (!smartPrompt.trim() || !imageSrc) return;
     setSmartLoading(true); setSmartMsg("");
-    // Every other network call in this app times out after 25-30s so a
-    // slow or dropped connection can never leave a button stuck disabled
-    // forever. This fetch previously had no such guard — a hung request
-    // on a weak connection would leave "Applying..." showing indefinitely
-    // with no way to recover short of reloading the page.
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000);
+
+    // Client-side keyword parser — instant, works offline, no API key needed.
+    // Covers the most common photo editing instructions creators actually use.
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6", max_tokens: 200,
-          messages: [{ role: "user", content: `Convert this photo editing instruction to CSS filter values. Instruction: "${smartPrompt}". Current: brightness=${brightness}, contrast=${contrast}, saturation=${saturation}. Respond ONLY with JSON (no markdown): {"brightness":110,"contrast":120,"saturation":100,"blur":0,"filter":"","message":"Applied warm look"}` }]
-        })
-      });
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
-      const data = await res.json();
-      const parsed = JSON.parse(data.content?.[0]?.text?.trim() ?? "{}");
-      if (parsed.brightness) setBrightness(parsed.brightness);
-      if (parsed.contrast) setContrast(parsed.contrast);
-      if (parsed.saturation !== undefined) setSaturation(parsed.saturation);
-      if (parsed.blur !== undefined) setBlur(parsed.blur);
-      if (parsed.filter !== undefined) setActiveFilter({ name: "Smart", css: parsed.filter });
-      setSmartMsg(parsed.message || "Edit applied!");
-      setSmartPrompt("");
-    } catch (err) {
-      if (err instanceof Error && err.name === "AbortError") {
-        setSmartMsg("Connection is slow — request timed out. Please try again.");
-      } else {
-        setSmartMsg("Try: 'make it brighter' or 'add vintage look'");
+      await new Promise(r => setTimeout(r, 400)); // small delay for UX feedback
+      const prompt = smartPrompt.toLowerCase();
+
+      let newBrightness = brightness;
+      let newContrast = contrast;
+      let newSaturation = saturation;
+      let newBlur = blur;
+      let newWarmth = warmth;
+      let filterName = "";
+      let filterCss = "";
+      let message = "";
+
+      // Brightness
+      if (/(bright|lighten|lighter|luminous|light up)/i.test(prompt)) { newBrightness = Math.min(150, brightness + 20); message = "Brightened ✨"; }
+      else if (/(dark|darken|darker|shadow|moody|dramatic)/i.test(prompt)) { newBrightness = Math.max(60, brightness - 20); message = "Darkened 🌑"; }
+
+      // Contrast
+      if (/(contrast|pop|punchy|crisp|sharp|vivid|vibrant)/i.test(prompt)) { newContrast = Math.min(150, contrast + 20); message = message || "Added contrast 💥"; }
+      else if (/(soft|matte|fade|faded|hazy|dreamy|flat)/i.test(prompt)) { newContrast = Math.max(60, contrast - 20); message = message || "Softened 🌸"; }
+
+      // Saturation
+      if (/(saturate|colorful|colour|color|rich|vivid|vibrant)/i.test(prompt)) { newSaturation = Math.min(200, saturation + 40); message = message || "Boosted colours 🎨"; }
+      else if (/(desaturate|muted|grey|gray|black.white|b&w|monochrome|grayscale)/i.test(prompt)) { newSaturation = 0; filterCss = "grayscale(1)"; filterName = "B&W"; message = "Black & white 🖤"; }
+
+      // Warmth
+      if (/(warm|golden|sunset|orange|summer|cozy|cosy)/i.test(prompt)) { newWarmth = Math.min(50, warmth + 25); message = message || "Warmed up 🌅"; }
+      else if (/(cool|cold|blue|winter|arctic|crisp)/i.test(prompt)) { newWarmth = Math.max(-50, warmth - 25); message = message || "Cooled down ❄️"; }
+
+      // Blur/Soften
+      if (/(blur|soften|smooth|glow|bokeh)/i.test(prompt)) { newBlur = Math.min(6, blur + 2); message = message || "Softened ✨"; }
+
+      // Named filter presets
+      if (/(vintage|retro|film|old)/i.test(prompt)) { filterCss = "sepia(0.4) contrast(1.1) brightness(1.05)"; filterName = "Vintage"; message = "Vintage film look 📽️"; }
+      else if (/(cinematic|movie|film|noir)/i.test(prompt)) { newContrast = 130; newSaturation = 80; filterCss = "contrast(1.3) saturate(0.8)"; filterName = "Cinematic"; message = "Cinematic look 🎬"; }
+      else if (/(portrait|skin|beauty|face)/i.test(prompt)) { newBrightness = Math.min(150, brightness + 10); newBlur = Math.min(4, blur + 1); newWarmth = Math.min(50, warmth + 15); message = "Portrait enhanced 🤳"; }
+      else if (/(hdr|landscape|nature)/i.test(prompt)) { newContrast = Math.min(150, contrast + 25); newSaturation = Math.min(200, saturation + 30); message = "HDR landscape look 🏔️"; }
+      else if (/(professional|clean|corporate|minimal)/i.test(prompt)) { newContrast = Math.min(150, contrast + 10); newSaturation = Math.max(0, saturation - 10); message = "Professional look 💼"; }
+
+      if (!message) {
+        message = "Tip: try 'make it brighter', 'cinematic look', 'vintage film', 'black and white', 'warmer tones'";
+        setSmartMsg(message);
+        setSmartLoading(false);
+        return;
       }
+
+      setBrightness(newBrightness);
+      setContrast(newContrast);
+      setSaturation(newSaturation);
+      setBlur(newBlur);
+      setWarmth(newWarmth);
+      if (filterName) setActiveFilter({ name: filterName, css: filterCss });
+      setSmartMsg(message);
+      setSmartPrompt("");
+    } catch {
+      setSmartMsg("Try: 'make it brighter', 'vintage look', 'black and white'");
     } finally {
-      clearTimeout(timeoutId);
       setSmartLoading(false);
     }
   }
